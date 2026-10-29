@@ -1,0 +1,25 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: 340px 1fr; /* Seccion_2 fija, Seccion_3 ocupa el resto */
+  gap: 20px;
+  align-items: start;
+  flex-direction: row;
+}
+
+/* Evita que el contenido de Seccion_3 desborde la columna */
+.fila > * {
+  min-width: 0;
+}
+
+/* En pantallas pequeñas se apilan */
+@media (max-width: 1100px) {
+  .fila {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,288 @@
+/* ============================================================
+   BarraInferior.module.css
+   Mobile     → max-width: 767px
+   Tablet     → 768px – 1023px
+   Laptop     → 1024px – 1439px
+   Desktop    → 1440px+
+   ============================================================ */
+
+/* ─── BASE ──────────────────────────────────────────────── */
+
+.footer {
+  background: #ffffff;
+  color: #6b6f76;
+  font-family: Sora, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  padding-top: 40px;
+  padding-left: 30px;
+  padding-right: 30px;
+  padding-bottom: 20px;
+  font-size: 14px;
+  border-top: 1px solid #ececec;
+}
+
+/* ─── CONTENIDO PRINCIPAL (5 columnas) ─────────────────────── */
+
+.contenido {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1.3fr;
+  gap: 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding-bottom: 32px;
+}
+
+.columna {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Columna 1: logo */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logoIcono {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #460161;
+  color: #ffffff;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.logoTexto {
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+}
+
+.descripcion {
+  color: #6b6f76;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.eslogan {
+  color: #1a1a1a;
+  font-weight: 600;
+  font-size: 13px;
+  margin: 0;
+}
+
+.redes {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.redIcono {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f3f1f5;
+  color: #460161;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.redIcono:hover {
+  background: #e6e1eb;
+}
+
+/* Titulos de columnas */
+.titulo {
+  color: #1a1a1a;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin: 0 0 4px 0;
+}
+
+/* Listas de enlaces */
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lista li::before {
+  content: "\203A"; /* simbolo "›" */
+  margin-right: 6px;
+  color: #a9adb3;
+}
+
+.lista a {
+  color: #6b6f76;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.lista a:hover {
+  color: #460161;
+}
+
+/* Lista de contacto (sin flecha) */
+.listaContacto {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: #6b6f76;
+}
+
+/* ─── DIVISOR ───────────────────────────────────────────── */
+
+.divisor {
+  max-width: 1440px;
+  margin: 0 auto;
+  height: 1px;
+  background: #ececec;
+}
+
+/* ─── BARRA FINAL ───────────────────────────────────────── */
+
+.barraFinal {
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-top: 20px;
+  flex-wrap: wrap;
+}
+
+.seguridad {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #6b6f76;
+  flex: 1 1 260px;
+}
+
+.seguridad svg {
+  flex-shrink: 0;
+  color: #460161;
+}
+
+.seguridad p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.copyright {
+  margin: 0;
+  font-size: 12px;
+  color: #90959c;
+  text-align: center;
+  flex: 1 1 300px;
+}
+
+.copyright a {
+  color: #460161;
+  text-decoration: none;
+}
+
+.copyright a:hover {
+  text-decoration: underline;
+}
+
+.pagos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 260px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.pagosLabel {
+  font-size: 12px;
+  color: #90959c;
+  margin-right: 4px;
+}
+
+.tarjeta {
+  background: #f3f1f5;
+  color: #460161;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  border: 1px solid #ececec;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+/* Laptop */
+@media (max-width: 1439px) {
+  .contenido {
+    grid-template-columns: 1.6fr 1fr 1fr 1fr 1.2fr;
+    gap: 18px;
+  }
+}
+
+/* Tablet */
+@media (max-width: 1023px) {
+  .contenido {
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 32px;
+  }
+
+  .barraFinal {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .pagos {
+    justify-content: center;
+  }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .footer {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .contenido {
+    grid-template-columns: 1fr;
+    row-gap: 28px;
+  }
+
+  .barraFinal {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .seguridad,
+  .copyright,
+  .pagos {
+    flex: 1 1 100%;
+    justify-content: flex-large;
+    text-align: left;
+  }
+}

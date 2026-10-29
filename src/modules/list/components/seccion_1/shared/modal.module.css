@@ -1,0 +1,1172 @@
+/* ==========================================================================
+   modal.module.css — ÚNICO archivo de estilos del modal "Registrar Nuevo Personal".
+   Lo usan: modal.tsx y parte1.tsx … parte5.tsx.
+
+   Índice
+    1. Variables, overlay y tarjeta
+    2. Iconos
+    3. Cabecera
+    4. Indicador de pasos
+    5. Cuerpo y columnas
+    6. Textos de formulario (títulos, etiquetas, ayudas y errores)
+    7. Inputs
+    8. Acceso al sistema (paso 1)
+    9. Select personalizado (paso 1)
+   10. Controles: segmentado, días y contador (pasos 2, 3 y 4)
+   11. Paso 2: horario, refrigerio y vigencia del registro
+   12. Paso 4: honorarios y descuentos
+   13. Paso 5: resumen
+   14. Pie y botones
+   15. Pantallas pequeñas (responsive)
+   ========================================================================== */
+
+
+/* ---------- 1. Variables, overlay y tarjeta ---------- */
+
+.overlay {
+  /* Paleta del modal (se hereda en todos los hijos) */
+  --azul-oscuro: #111A3E;
+  --azul: #1E2A5E;
+  --texto: #111827;
+  --texto-titulo: #1F2937;
+  --texto-medio: #374151;
+  --texto-suave: #6B7280;
+  --borde: #E5E7EB;
+  --borde-campo: #D1D5DB;
+  --fondo-suave: #F3F4F6;
+  --error: #EF4444;
+
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  width: 860px;
+  max-width: 100%;
+  max-height: calc(100vh - 32px); /* respaldo para navegadores viejos */
+  max-height: calc(100dvh - 32px);
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+}
+
+
+/* ---------- 2. Iconos ---------- */
+
+.icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.iconArrowDown {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.iconArrowDownAbierto {
+  transform: rotate(180deg);
+}
+
+
+/* ---------- 3. Cabecera ---------- */
+
+.encabezado {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 22px 24px 16px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.titulo {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.subtitulo {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--texto-suave);
+}
+
+.botonCerrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+
+.botonCerrar:hover:not(:disabled) {
+  background-color: var(--fondo-suave);
+  color: var(--texto);
+}
+
+
+/* ---------- 4. Indicador de pasos ---------- */
+
+.pasos {
+  flex-shrink: 0;
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 16px 24px 0;
+  list-style: none;
+}
+
+.paso {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pasoBarra {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--borde);
+  transition: background 0.2s;
+}
+
+.pasoInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pasoNumero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--borde);
+  color: var(--texto-suave);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pasoCheck {
+  width: 13px;
+  height: 13px;
+}
+
+.pasoTexto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: #9CA3AF;
+}
+
+/* Paso actual y pasos completados */
+.pasoActivo .pasoBarra,
+.pasoCompleto .pasoBarra {
+  background: var(--azul-oscuro);
+}
+
+.pasoActivo .pasoNumero,
+.pasoCompleto .pasoNumero {
+  background: var(--azul-oscuro);
+  color: #ffffff;
+}
+
+.pasoActivo .pasoTexto {
+  color: var(--texto);
+}
+
+.pasoCompleto .pasoTexto {
+  color: var(--texto-medio);
+}
+
+
+/* ---------- 5. Cuerpo y columnas ---------- */
+
+.cuerpo {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+  padding: 20px 24px 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Altura mínima para que el modal no "salte" entre pasos */
+.cuerpoPaso {
+  min-height: 330px;
+}
+
+.columnas {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+}
+
+.columna {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding-right: 24px;
+}
+
+/* Línea vertical que separa las dos secciones */
+.columnaDerecha {
+  padding-right: 0;
+  padding-left: 24px;
+  border-left: 1px solid var(--borde);
+}
+
+.columnaUnica {
+  padding-right: 0;
+}
+
+
+/* ---------- 6. Textos de formulario ---------- */
+
+.seccion {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--texto-titulo);
+}
+
+.fila {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.etiqueta {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--texto-titulo);
+}
+
+.requerido {
+  color: var(--error);
+}
+
+.ayuda {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--texto-suave);
+}
+
+.errorCampo,
+.errorGeneral {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--error);
+}
+
+
+/* ---------- 7. Inputs ---------- */
+
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--texto);
+  background-color: #ffffff;
+  border: 1px solid var(--borde-campo);
+  border-radius: 8px;
+}
+
+.input::placeholder {
+  color: #9CA3AF;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--azul);
+  box-shadow: 0 0 0 3px rgba(30, 42, 94, 0.15);
+}
+
+.input[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+/* Solo lectura (correo y descuentos generales) */
+.inputBloqueado {
+  padding-left: 42px; /* deja sitio al icono de la izquierda */
+  background-color: var(--fondo-suave);
+  color: var(--texto-suave);
+  cursor: not-allowed;
+}
+
+.inputBloqueado:focus {
+  border-color: var(--borde-campo);
+  box-shadow: none;
+}
+
+/* Campo de solo lectura sin icono (debe ir después de .inputBloqueado) */
+.inputSinIcono {
+  padding-left: 12px;
+}
+
+/* Contenedor de un input con icono dentro */
+.inputConIcono {
+  position: relative;
+  width: 100%;
+}
+
+.iconoInputIzquierdo {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  z-index: 1;
+  width: 18px;
+  height: 18px;
+  color: var(--texto-suave);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.inputPassword {
+  padding-left: 42px;
+  padding-right: 42px;
+}
+
+.botonOjo {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--texto-suave);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.botonOjo:hover {
+  background-color: var(--fondo-suave);
+  color: var(--texto);
+}
+
+
+/* ---------- 8. Acceso al sistema (paso 1) ---------- */
+
+.acceso {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--borde);
+}
+
+.checkAcceso {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px; /* misma altura que un input para alinear */
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--texto-titulo);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--azul-oscuro);
+  cursor: pointer;
+}
+
+.accesoCampos {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  min-width: 0;
+}
+
+
+/* ---------- 9. Select personalizado (paso 1) ---------- */
+
+.select {
+  position: relative;
+}
+
+.selectBoton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-size: 14px;
+  text-align: left;
+  color: var(--texto-medio);
+  background: #ffffff;
+  border: 1px solid var(--borde-campo);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.selectBoton:focus-visible,
+.selectAbierto {
+  outline: none;
+  border-color: var(--azul);
+  box-shadow: 0 0 0 3px rgba(30, 42, 94, 0.15);
+}
+
+.selectBoton[aria-invalid="true"] {
+  border-color: var(--error);
+}
+
+.selectTexto,
+.selectPlaceholder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectTexto {
+  color: var(--texto);
+}
+
+.selectPlaceholder {
+  color: var(--texto-medio);
+}
+
+.selectMenu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+
+.selectBusqueda {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 4px 4px 8px;
+}
+
+.iconoBusqueda {
+  position: absolute;
+  left: 10px;
+  width: 16px;
+  height: 16px;
+  color: #9CA3AF;
+  pointer-events: none;
+}
+
+.inputBusqueda {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px 8px 34px;
+  font-size: 13px;
+  color: var(--texto);
+  background: #ffffff;
+  border: 1px solid var(--borde-campo);
+  border-radius: 7px;
+  outline: none;
+}
+
+.inputBusqueda:focus {
+  border-color: var(--azul);
+  box-shadow: 0 0 0 2px rgba(30, 42, 94, 0.1);
+}
+
+.selectLista {
+  max-height: 200px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.selectOpcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  font-size: 14px;
+  color: var(--texto-titulo);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.selectOpcion:hover {
+  background-color: var(--fondo-suave);
+}
+
+.selectOpcionPlaceholder {
+  background-color: #EEF0F3;
+  color: var(--texto-medio);
+  font-weight: 500;
+}
+
+.opcionTextos {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.opcionLabel {
+  font-weight: 500;
+}
+
+.opcionSublabel {
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+
+.opcionCheck {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--azul);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatarInicial {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #E0E7FF;
+  color: #3730A3;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sinResultados {
+  padding: 12px 10px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--texto-suave);
+}
+
+
+/* ---------- 10. Controles: segmentado, días y contador ---------- */
+
+/* Control segmentado (fijo / flexible / no tiene) */
+.segmentado {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 2px;
+  padding: 3px;
+  background: var(--fondo-suave);
+  border-radius: 10px;
+}
+
+.segmento {
+  padding: 7px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--texto-suave);
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.segmento:hover {
+  color: var(--texto);
+}
+
+.segmento:focus-visible,
+.dia:focus-visible {
+  outline: 2px solid var(--azul);
+  outline-offset: 1px;
+}
+
+.segmentoActivo {
+  background: #ffffff;
+  color: var(--azul-oscuro);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Días de la semana (feriado fijo) */
+.dias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dia {
+  padding: 9px 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--texto-medio);
+  background: #ffffff;
+  border: 1px solid var(--borde-campo);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.dia:hover {
+  background: var(--fondo-suave);
+}
+
+.diaActivo,
+.diaActivo:hover {
+  background: var(--azul-oscuro);
+  border-color: var(--azul-oscuro);
+  color: #ffffff;
+}
+
+/* Contador (feriado flexible) */
+.contador {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  border: 1px solid var(--borde-campo);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.contadorBoton {
+  width: 38px;
+  height: 38px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--texto);
+  background: #F9FAFB;
+  border: none;
+  cursor: pointer;
+}
+
+.contadorBoton:hover:not(:disabled) {
+  background: var(--borde);
+}
+
+.contadorBoton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.contadorValor {
+  min-width: 48px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+
+/* ---------- 11. Paso 2: horario, refrigerio y vigencia ---------- */
+
+.contenedorPaso2 {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Título "Horario" + selector de puesto en la misma línea */
+.encabezadoSeccion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* Debe ir después de .input para poder reemplazar su ancho */
+.selectPuesto {
+  width: auto;
+  min-width: 11rem;
+  max-width: 55%;
+}
+
+.registroCompleto {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--borde);
+}
+
+/* Título que ocupa las dos columnas */
+.tituloRegistro {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--texto-titulo);
+}
+
+/* Cada columna (inicio / fin) */
+.columnaRegistro {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+
+/* ---------- 12. Paso 4: honorarios y descuentos ---------- */
+
+/* Contenido de la caja de descuentos (General | Personalizado) */
+.descuentos {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Símbolo "S/" dentro del input del sueldo (debe ir después de .iconoInputIzquierdo) */
+.simboloMoneda {
+  width: auto;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 18px;
+}
+
+/* Input del sueldo (debe ir después de .input) */
+.inputMoneda {
+  padding-left: 38px;
+}
+
+
+/* ---------- 13. Paso 5: resumen ---------- */
+
+.resumen {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.resColumna {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.resTarjeta {
+  min-width: 0;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+}
+
+/* Perfil: foto, nombre y cargo */
+.resPerfil {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.resFoto {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 76px;
+  padding: 0;
+  overflow: hidden;
+  color: #5B7BB5;
+  background: #EEF3FB;
+  border: 2px dashed #B8C8E4;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.resFoto:hover {
+  background: #E2EBF8;
+  border-color: #5B7BB5;
+}
+
+.resFotoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.resFotoIcono {
+  width: 28px;
+  height: 28px;
+}
+
+.resPerfilTexto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.resNombre {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--azul-oscuro);
+}
+
+.resInsignia {
+  padding: 4px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2A5BD7;
+  background: #E3EDFD;
+  border-radius: 999px;
+}
+
+/* Lista de datos personales */
+.resLista {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+}
+
+.resFila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.resIconoCaja {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: #3B5A94;
+  background: #EEF3FB;
+  border-radius: 10px;
+}
+
+.resAvatar {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.resIcono {
+  width: 18px;
+  height: 18px;
+}
+
+.resEtiqueta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+
+.resValor {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--azul-oscuro);
+  overflow-wrap: anywhere;
+}
+
+/* Título de cada tarjeta (ocupa todo el ancho, pegado a los bordes) */
+.resTituloTarjeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: -16px -16px 16px;
+  padding: 12px 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--azul-oscuro);
+  background: #F3F7FD;
+  border-radius: 14px 14px 0 0;
+}
+
+/* Información laboral */
+.resLaboral {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 0;
+}
+
+.resLaboralIzq {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-right: 16px;
+  border-right: 1px solid var(--borde);
+}
+
+.resLaboralDer {
+  padding-left: 16px;
+}
+
+.resDato {
+  min-width: 0;
+}
+
+/* Honorarios */
+.resSueldo {
+  padding: 14px 16px;
+  background: #F3F7FD;
+  border-radius: 12px;
+}
+
+.resSueldoValor {
+  margin: 4px 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--azul-oscuro);
+}
+
+
+/* ---------- 14. Pie y botones ---------- */
+
+.acciones {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  background-color: #F9FAFB;
+  border-top: 1px solid var(--borde);
+  border-radius: 0 0 14px 14px;
+}
+
+.accionesIzquierda {
+  margin-right: auto;
+}
+
+/* Base común de los tres botones del pie */
+.botonGuardar,
+.botonCancelar,
+.botonAtras {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.botonGuardar {
+  background-color: var(--azul-oscuro);
+  color: #ffffff;
+}
+
+.botonGuardar:hover:not(:disabled) {
+  background-color: var(--azul);
+}
+
+.botonCancelar {
+  background-color: var(--borde);
+  color: var(--texto-medio);
+}
+
+.botonCancelar:hover:not(:disabled) {
+  background-color: var(--borde-campo);
+}
+
+.botonAtras {
+  background-color: #ffffff;
+  color: var(--texto-medio);
+  border: 1px solid var(--borde-campo);
+}
+
+.botonAtras:hover:not(:disabled) {
+  background-color: var(--fondo-suave);
+}
+
+/* Estados deshabilitados */
+.botonGuardar:disabled,
+.botonCancelar:disabled,
+.botonAtras:disabled,
+.botonCerrar:disabled,
+.input:disabled,
+.selectBoton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+/* ---------- 15. Pantallas pequeñas (responsive) ---------- */
+
+@media (max-width: 760px) {
+  .overlay {
+    padding: 8px;
+  }
+
+  .modal {
+    max-height: calc(100dvh - 16px);
+  }
+
+  .encabezado {
+    padding: 16px 16px 12px;
+  }
+
+  .pasos {
+    gap: 8px;
+    padding: 14px 16px 0;
+  }
+
+  /* En móvil solo se ve el número, sin el nombre del paso */
+  .pasoTexto {
+    display: none;
+  }
+
+  .cuerpo {
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .cuerpoPaso {
+    min-height: 0;
+  }
+
+  .columnas {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .columna {
+    padding-right: 0;
+  }
+
+  /* La línea vertical pasa a ser horizontal */
+  .columnaDerecha {
+    padding-top: 20px;
+    padding-left: 0;
+    border-top: 1px solid var(--borde);
+    border-left: none;
+  }
+
+  .fila,
+  .accesoCampos,
+  .resumen {
+    grid-template-columns: 1fr;
+  }
+
+  .acceso {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .accesoCampos {
+    width: 100%;
+  }
+
+  .contenedorPaso2 {
+    gap: 16px;
+  }
+
+  .registroCompleto {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding-top: 16px;
+  }
+
+  /* El control segmentado ocupa todo el ancho y los botones se reparten */
+  .segmentado {
+    display: flex;
+    align-self: stretch;
+    width: 100%;
+  }
+
+  .segmento {
+    flex: 1;
+    padding: 8px 6px;
+    font-size: 13px;
+    line-height: 1.25;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .acciones {
+    padding: 12px 16px;
+  }
+}
+
+/* Pantallas bajas: se compacta el espacio vertical */
+@media (max-height: 720px) {
+  .encabezado {
+    padding: 16px 24px 12px;
+  }
+
+  .cuerpo {
+    gap: 16px;
+    padding: 16px 24px 18px;
+  }
+
+  .cuerpoPaso {
+    min-height: 0;
+  }
+
+  .contenedorPaso2 {
+    gap: 16px;
+  }
+
+  .registroCompleto {
+    padding-top: 14px;
+  }
+
+  .acciones {
+    padding: 12px 24px;
+  }
+}

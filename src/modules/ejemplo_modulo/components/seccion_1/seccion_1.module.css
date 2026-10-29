@@ -1,0 +1,66 @@
+.seccion {
+  width: 100%;
+  min-height: 100%;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.seccion h2 {
+  margin: 0 0 24px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+.icono {
+  min-height: 120px;
+  padding: 20px 12px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+
+  box-sizing: border-box;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.icono:hover {
+  border-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.icono svg {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+.icono span {
+  max-width: 100%;
+  overflow: hidden;
+
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  color: #374151;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

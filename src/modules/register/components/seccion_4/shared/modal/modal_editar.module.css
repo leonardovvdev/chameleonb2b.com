@@ -1,0 +1,94 @@
+.contenedor {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ayuda {
+  margin: 0;
+  font-size: 13px;
+  color: #5b7bb5;
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.etiqueta {
+  font-size: 12px;
+  font-weight: 600;
+  color: #111a3e;
+}
+
+.input {
+  box-sizing: border-box;
+  height: 44px;
+  padding: 0 14px;
+  background: #ffffff;
+  border: 1px solid #e3e9f4;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  color: #111a3e;
+  transition: border-color 0.2s ease;
+}
+
+.input:hover,
+.input:focus {
+  outline: none;
+  border-color: #b0b8cc;
+}
+
+.botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.btnPrimario,
+.btnSecundario {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.btnPrimario {
+  background: #1f2e45;
+  border: 1px solid #1f2e45;
+  color: #ffffff;
+}
+
+.btnPrimario:hover {
+  background: #34455f;
+}
+
+.btnSecundario {
+  background: #ffffff;
+  border: 1px solid #e3e9f4;
+  color: #111a3e;
+}
+
+.btnSecundario:hover {
+  background: #f4f6fb;
+  border-color: #b0b8cc;
+}
+
+@media (max-width: 520px) {
+  .grilla {
+    grid-template-columns: 1fr;
+  }
+}

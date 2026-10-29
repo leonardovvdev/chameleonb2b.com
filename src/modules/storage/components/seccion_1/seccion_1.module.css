@@ -1,0 +1,334 @@
+.seccion {
+  --azul: #16253c;
+  --azul-hover: #0f1a2b;
+  --texto: #16253c;
+  --texto-suave: #5b6676;
+  --borde: #e3e7ee;
+  --fondo-suave: #f6f8fb;
+
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px;
+  width: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  color: var(--texto);
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+}
+
+/* ---------- Cabecera ---------- */
+
+.cabecera {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.titulo {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--azul);
+}
+
+.subtitulo {
+  margin: 4px 0 0 0;
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+
+.crear,
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.crear input[type="text"] {
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--texto);
+  background-color: #ffffff;
+  outline: none;
+  min-width: 200px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.crear input[type="text"]:focus {
+  border-color: var(--azul);
+  box-shadow: 0 0 0 3px rgba(22, 37, 60, 0.08);
+}
+
+.crear input[type="text"]:disabled {
+  background-color: var(--fondo-suave);
+  cursor: not-allowed;
+}
+
+.contador {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--texto-suave);
+  background-color: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  padding: 5px 12px;
+  white-space: nowrap;
+}
+
+/* ---------- Botones ---------- */
+
+.botonPrimario {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #ffffff;
+  background-color: var(--azul);
+  cursor: pointer;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.botonPrimario:hover:not(:disabled) {
+  background-color: var(--azul-hover);
+}
+
+.botonPrimario:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.botonPeligro {
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--azul);
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.botonPeligro:hover {
+  background-color: var(--fondo-suave);
+  border-color: var(--azul);
+}
+
+.enlace {
+  border: none;
+  background: none;
+  padding: 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--azul);
+  cursor: pointer;
+}
+
+.enlace:hover {
+  text-decoration: underline;
+}
+
+.inputOculto {
+  display: none;
+}
+
+/* ---------- Mensajes ---------- */
+
+.error {
+  background-color: #ffffff;
+  color: var(--azul);
+  border: 1px solid var(--azul);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  margin: 0;
+}
+
+.mensaje {
+  margin: 0;
+  font-size: 14px;
+  color: var(--texto-suave);
+}
+
+.ayuda {
+  margin: -8px 0 0 0;
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+
+.subcarpetas {
+  font-size: 13px;
+  color: var(--texto-suave);
+  background-color: var(--fondo-suave);
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+/* ---------- Carpetas (estilo explorador) ---------- */
+
+.carpetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.carpeta {
+  position: relative;
+  border-radius: 10px;
+  transition: background-color 0.15s ease;
+}
+
+.carpeta:hover {
+  background-color: var(--fondo-suave);
+}
+
+.carpetaBoton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 16px 10px 14px;
+  border: none;
+  background: none;
+  font-family: inherit;
+  color: var(--texto);
+  cursor: pointer;
+}
+
+.iconoCarpeta {
+  width: 84px;
+  height: 68px;
+}
+
+.carpetaNombre {
+  max-width: 100%;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.carpetaInfo {
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+
+.carpetaEliminar {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--borde);
+  border-radius: 50%;
+  background-color: #ffffff;
+  color: var(--azul);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.carpeta:hover .carpetaEliminar {
+  opacity: 1;
+}
+
+.carpetaEliminar:hover {
+  border-color: var(--azul);
+}
+
+/* ---------- Dentro de una carpeta ---------- */
+
+.ruta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.separador {
+  color: var(--texto-suave);
+}
+
+.rutaActual {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--azul);
+}
+
+.archivos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 16px;
+}
+
+.tarjetaArchivo {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #ffffff;
+  transition: box-shadow 0.15s ease;
+}
+
+.tarjetaArchivo:hover {
+  box-shadow: 0 4px 14px rgba(22, 37, 60, 0.08);
+}
+
+.vista {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+  background-color: var(--fondo-suave);
+}
+
+.vista img,
+.vista video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sinVista {
+  font-size: 12px;
+  color: var(--texto-suave);
+}
+
+.pieArchivo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--borde);
+}
+
+.nombreArchivo {
+  font-size: 12px;
+  color: var(--texto-suave);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

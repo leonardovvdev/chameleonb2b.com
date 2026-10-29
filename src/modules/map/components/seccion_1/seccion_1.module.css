@@ -1,0 +1,9 @@
+.mapaContainer {
+  width: 100%;
+  height: 100vh; /* ocupa toda la altura de la pantalla */
+}
+
+.mapa {
+  width: 100%;
+  height: 100%;
+}

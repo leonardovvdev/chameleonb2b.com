@@ -1,0 +1,249 @@
+.seccion {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  min-width: 0;
+}
+.icon { transition: transform 0.2s; cursor: pointer; }
+.iconAbierto { transform: rotate(180deg); }
+/* ---------- Contrato ---------- */
+.contratoWrap {
+  position: relative;
+}
+.iconBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+.contrato {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 14px;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+}
+
+.contratoNombre {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1d2b9b;
+}
+
+.contratoRango {
+  margin: 4px 0 8px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 10px;
+  color: #4b5563;
+  background: #e5e7eb;
+  border-radius: 999px;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.item,
+.itemActivo {
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 12px;
+  color: #111827;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: #f3f4f6;
+}
+
+.itemActivo {
+  background: #e0e7ff;
+  color: #1d2b9b;
+  font-weight: 600;
+}
+
+/* ---------- Reporte ---------- */
+.reporte {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 16px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.honorario {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 14px;
+  color: #fff;
+  background: #0f1b6b;
+}
+
+.honorarioLabel {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.honorarioValor {
+  text-align: center;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.meses {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 10px 12px 4px;
+}
+
+.mes,
+.mesActivo {
+  padding: 2px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.mes {
+  background: #86b391;
+}
+
+.mesActivo {
+  background: #15803d;
+}
+
+.descuentos {
+  margin: 4px 12px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.bloque {
+  margin: 8px 12px 0;
+  padding-top: 6px;
+  border-top: 1px solid #d1d5db;
+}
+
+.bloqueHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.bloqueTitulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bloqueTitulo input {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
+.colMonto {
+  min-width: 90px;
+  text-align: center;
+}
+
+.fila,
+.detalle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.detalle {
+  padding-left: 10px;
+  color: #9ca3af;
+}
+
+.neg {
+  min-width: 90px;
+  text-align: center;
+  font-weight: 500;
+  color: #dc2626;
+}
+
+.afp {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 12px 0;
+  padding-top: 6px;
+  border-top: 1px solid #d1d5db;
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.afp .neg {
+  font-size: 11px;
+}
+
+.total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 12px 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+}
+
+@media (max-width: 700px) {
+  .seccion {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,544 @@
+.seccion {
+  margin: 0 20px;
+  padding-bottom: 20px; /* ← 20px al borde de abajo */
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  /* la altura la fija el JS según la ventana */
+}
+
+.tarjeta {
+  background: #fff;
+  border: 1px solid #e3e9f4;
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(17, 26, 62, 0.06);
+  /* permite usar @container según el ancho real de la tarjeta */
+  container-type: inline-size;
+  container-name: tarjeta;
+
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden; /* sin scroll vertical */
+}
+
+.mensaje {
+  margin: 0;
+  padding: 32px 24px;
+  font-size: 13px;
+  color: #5b7bb5;
+  text-align: center;
+}
+
+/* ───────── Tabla ───────── */
+.tabla {
+  /* ===== ANCHOS DE COLUMNA: edita solo estos valores ===== */
+  --w-numero: 56px;
+  --w-empleado: 200px;
+  --w-ingreso: 130px;
+  --w-salida: 130px;
+  --w-acciones: 110px;
+  --w-incidencias: 130px;
+  --w-cargo: 150px;
+  --w-estado: 130px;
+  --w-total-l: 110px;
+  --w-total-r: 110px;
+
+  /* columnas siempre visibles (máxima prioridad) */
+  --base: calc(
+    var(--w-numero) + var(--w-empleado) + var(--w-ingreso) + var(--w-salida) +
+      var(--w-acciones)
+  );
+
+  width: 100%;
+  table-layout: fixed;
+  min-width: var(--base);
+  border-collapse: collapse;
+}
+
+/* anchos aplicados desde <colgroup> */
+.cNumero { width: var(--w-numero); }
+.cEmpleado { width: var(--w-empleado); }
+.cCargo { width: var(--w-cargo); }
+.cIngreso { width: var(--w-ingreso); }
+.cSalida { width: var(--w-salida); }
+.cTotalL { width: var(--w-total-l); }
+.cTotalR { width: var(--w-total-r); }
+.cEstado { width: var(--w-estado); }
+.cIncidencias { width: var(--w-incidencias); }
+.cAcciones { width: var(--w-acciones); }
+
+.tabla th,
+.tabla td {
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid #eef1f7;
+  box-sizing: border-box;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tabla th {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #111a3e;
+  background: #fff;
+  white-space: nowrap;
+}
+
+.tabla td {
+  font-size: 13px;
+  color: #111a3e;
+}
+
+.tabla tbody tr {
+  height: 65px; /* altura fija: 40px foto + 24px padding + 1px borde */
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.tabla tbody tr:hover {
+  background: #f9fafb;
+}
+
+.colNumero {
+  font-weight: 600;
+}
+
+.colAcciones {
+  text-align: center !important;
+}
+
+/* ───────── Columnas por prioridad ─────────
+   Prioridad (mayor → menor):
+   N°, Empleado, Ingreso, Salida, Acciones, Incidencias, Cargo, Estado, Total L, Total R
+
+   Las 5 primeras siempre se ven. Las demás aparecen una por una
+   cuando la tarjeta tiene espacio suficiente.
+
+   Cada umbral = suma de anchos de las columnas visibles hasta ese nivel:
+   base (626) + incidencias (130) = 756
+   + cargo (150)                  = 906
+   + estado (130)                 = 1036
+   + total L (110)                = 1146
+   + total R (110)                = 1256
+   Si cambias los --w-*, recalcula estos números. */
+
+/* Por defecto: ocultas */
+.colIncidencias,
+.colCargo,
+.colEstado,
+.colTotalL,
+.colTotalR {
+  display: none;
+}
+
+/* Nivel 1: + Incidencias */
+@container tarjeta (min-width: 756px) {
+  .tabla {
+    min-width: calc(var(--base) + var(--w-incidencias));
+  }
+  .colIncidencias {
+    display: table-cell;
+  }
+  col.colIncidencias {
+    display: table-column;
+  }
+}
+
+/* Nivel 2: + Cargo */
+@container tarjeta (min-width: 906px) {
+  .tabla {
+    min-width: calc(var(--base) + var(--w-incidencias) + var(--w-cargo));
+  }
+  .colCargo {
+    display: table-cell;
+  }
+  col.colCargo {
+    display: table-column;
+  }
+}
+
+/* Nivel 3: + Estado */
+@container tarjeta (min-width: 1036px) {
+  .tabla {
+    min-width: calc(
+      var(--base) + var(--w-incidencias) + var(--w-cargo) + var(--w-estado)
+    );
+  }
+  .colEstado {
+    display: table-cell;
+  }
+  col.colEstado {
+    display: table-column;
+  }
+}
+
+/* Nivel 4: + Total L */
+@container tarjeta (min-width: 1146px) {
+  .tabla {
+    min-width: calc(
+      var(--base) + var(--w-incidencias) + var(--w-cargo) + var(--w-estado) +
+        var(--w-total-l)
+    );
+  }
+  .colTotalL {
+    display: table-cell;
+  }
+  col.colTotalL {
+    display: table-column;
+  }
+}
+
+/* Nivel 5: + Total R (todas visibles) */
+@container tarjeta (min-width: 1256px) {
+  .tabla {
+    min-width: calc(
+      var(--base) + var(--w-incidencias) + var(--w-cargo) + var(--w-estado) +
+        var(--w-total-l) + var(--w-total-r)
+    );
+  }
+  .colTotalR {
+    display: table-cell;
+  }
+  col.colTotalR {
+    display: table-column;
+  }
+}
+
+/* ───────── Empleado ───────── */
+.empleado {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.foto {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+}
+
+.fotoVacia {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.empleadoTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nombre,
+.apellido,
+.dniSub,
+.cargo {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nombre {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #111a3e;
+}
+
+.apellido {
+  font-size: 11.5px;
+  color: #5b7bb5;
+}
+
+.dniSub {
+  font-size: 11.5px;
+  color: #5b7bb5;
+}
+
+.cargo {
+  font-size: 13px;
+  color: #111a3e;
+}
+
+/* ───────── Horas ───────── */
+.horas {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hora {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.horaOk {
+  color: #16a34a;
+}
+
+.horaTarde {
+  color: #f59e0b;
+}
+
+.horaNeutra {
+  color: #111a3e;
+}
+
+.iconoHora {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.total {
+  font-weight: 700;
+  color: #111a3e;
+  white-space: nowrap;
+}
+
+.vacio {
+  color: #9aa5bd;
+}
+
+/* ───────── Registro en tiempo real ───────── */
+.filaNueva {
+  animation: filaNueva 3s ease-out;
+}
+
+.filaNueva .hora {
+  animation: horaPop 0.5s ease-out;
+}
+
+@keyframes filaNueva {
+  0% {
+    background: #dcfce7;
+    box-shadow: inset 3px 0 0 #16a34a;
+  }
+  70% {
+    background: #f0fdf4;
+    box-shadow: inset 3px 0 0 #16a34a;
+  }
+  100% {
+    background: transparent;
+    box-shadow: inset 3px 0 0 transparent;
+  }
+}
+
+@keyframes horaPop {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ───────── Pie ───────── */
+.pie {
+  flex-shrink: 0; /* el pie siempre visible abajo */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 14px 20px;
+}
+
+.pieIzq {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.resumen {
+  font-size: 12px;
+  color: #5b7bb5;
+}
+
+.envivo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #16a34a;
+  background: #ecfdf3;
+  border-radius: 999px;
+}
+
+.punto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #16a34a;
+  animation: pulso 1.6s ease-in-out infinite;
+}
+
+@keyframes pulso {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(22, 163, 74, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+  }
+}
+
+/* ───────── Paginación ───────── */
+.paginacion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pagBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #111a3e;
+  background: #fff;
+  border: 1px solid #e3e9f4;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.pagBtn:hover:not(:disabled) {
+  border-color: #b0b8cc;
+}
+
+.pagBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagActiva {
+  color: #fff;
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.iconoFlecha {
+  width: 14px;
+  height: 14px;
+}
+
+/* ───────── Estado ───────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.badgePunto {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.badgePuntual {
+  color: #16a34a;
+  background: #e7f8ee;
+}
+
+.badgeTardanza {
+  color: #f59e0b;
+  background: #fff3de;
+}
+
+/* ───────── Incidentes ───────── */
+.incidentes {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+}
+
+.incCero {
+  color: #5b7bb5;
+  background: #f3f5fa;
+}
+
+.incAlerta {
+  color: #e11d48;
+  background: #ffe4e9;
+}
+
+/* ───────── Acciones ───────── */
+.btnAcciones {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  color: #111a3e;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btnAcciones:hover {
+  background: #eef1f7;
+}
+
+.iconoPuntos {
+  width: 18px;
+  height: 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filaNueva,
+  .filaNueva .hora,
+  .punto {
+    animation: none;
+  }
+}

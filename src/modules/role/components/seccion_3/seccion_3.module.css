@@ -1,0 +1,130 @@
+.seccion{
+    background-color: white;
+    border-radius: 0px 0px 10px 10px;
+    padding: 20px;
+    margin: 0px 20px 20px 20px;
+    font-family: "Inter", sans-serif;
+}
+
+.textoError{
+    color: #DC2626;
+    font-size: 13px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.tabla{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.tabla thead th{
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    padding: 12px 8px;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.tabla tbody td{
+    padding: 12px 8px;
+    border-bottom: 1px solid #F3F4F6;
+    color: #374151;
+    vertical-align: middle;
+}
+
+.foto{
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.fotoVacia{
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #E5E7EB;
+}
+
+.acciones{
+    position: relative;
+    text-align: right;
+}
+
+.botonMenu{
+    background: none;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    font-size: 16px;
+    color: #6B7280;
+    cursor: pointer;
+}
+
+.paginacion{
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+    margin-top: 16px;
+}
+
+.paginacion button{
+    background: none;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    min-width: 28px;
+    height: 28px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+}
+
+.paginacion button:disabled{
+    color: #D1D5DB;
+    cursor: not-allowed;
+}
+
+.paginaActiva{
+    background-color: #EFF6FF;
+    border-color: #3B82F6 !important;
+    color: #3B82F6 !important;
+}
+.filaVacia td{
+    padding: 12px 8px;
+    border-bottom: 1px solid #F3F4F6;
+    color: transparent;
+    height: 64px;   
+}
+
+.foto, .fotoVacia{
+    cursor: pointer;
+}
+/* Recorta solo en horizontal para no cortar el menú ⋮ de las últimas filas */
+.tablaViewport{
+    overflow-x: clip;
+}
+
+.tablaPagina{
+    animation: entrarPagina 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+}
+
+@keyframes entrarPagina{
+    from{
+        opacity: 0;
+        transform: translateX(calc(var(--dir, 1) * 32px));
+    }
+    to{
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce){
+    .tablaPagina{
+        animation: none;
+    }
+}

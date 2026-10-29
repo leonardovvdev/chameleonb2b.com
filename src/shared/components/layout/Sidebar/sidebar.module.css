@@ -1,0 +1,392 @@
+/* =========================================================
+   SIDEBAR · tema oscuro
+   (todos los colores salen de las variables de abajo)
+   ========================================================= */
+.sidebar {
+  --sb-bg: #16253c;
+  --sb-text: #d5dded;
+  --sb-text-strong: #ffffff;
+  --sb-line: rgba(255, 255, 255, 0.12);
+  --sb-hover: rgba(255, 255, 255, 0.07);
+  --sb-active: rgba(255, 255, 255, 0.12);
+  --sb-focus: #7aa2ff;
+
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: 230px;
+  height: 100vh;
+  background-color: var(--sb-bg);
+  border-right: 1px solid var(--sb-line);
+  font-family: "Inter", "Segoe UI", system-ui, Arial, sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- Cabecera --- */
+.seccion1 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 12px;
+  border-bottom: 1px solid var(--sb-line);
+}
+
+.nombre {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--sb-text-strong);
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.botonIcono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--sb-text-strong);
+  transition: background-color 0.15s ease;
+}
+
+.botonIcono:hover {
+  background-color: var(--sb-hover);
+}
+
+.botonIcono:focus-visible {
+  outline: 2px solid var(--sb-focus);
+  outline-offset: 1px;
+}
+
+.iconAccion {
+  width: 18px;
+  height: 18px;
+}
+
+/* --- Navegación --- */
+.seccion2 {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 10px;
+  overflow-y: auto;
+}
+
+/* Títulos de módulo (GESTIÓN EMPRESARIAL, MAPA, ANUNCIO…) */
+.seccion2 p {
+  margin: 16px 10px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--sb-text);
+}
+
+.seccion2 p:first-child {
+  margin-top: 4px;
+}
+
+.seccion2 p b {
+  font-weight: 600;
+}
+
+.tituloSeccion {
+  display: flex;
+  align-items: center;
+}
+
+.tituloClickable {
+  cursor: pointer;
+  user-select: none;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.tituloClickable:hover {
+  color: var(--sb-text-strong);
+}
+
+.tituloClickable:focus-visible {
+  outline: 2px solid var(--sb-focus);
+  outline-offset: 2px;
+}
+
+/* NavLink que se ve como título (MAPA) */
+.tituloLink {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.tituloLink:hover,
+.tituloLinkActivo {
+  color: var(--sb-text-strong);
+}
+
+/* --- Iconos --- */
+.iconMaleta {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.iconSub {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* --- Links --- */
+.link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sb-text);
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.link:hover {
+  background-color: var(--sb-hover);
+  color: var(--sb-text-strong);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--sb-focus);
+  outline-offset: 1px;
+}
+
+.linkActivo,
+.linkActivo:hover {
+  background-color: var(--sb-active);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--sb-text-strong);
+  font-weight: 600;
+}
+
+/* --- Cabecera de sección anidada (Personal, Asistencia): parece un link --- */
+.tituloNested {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sb-text);
+}
+
+.tituloNested:hover {
+  background-color: var(--sb-hover);
+  color: var(--sb-text-strong);
+}
+
+/* --- Flecha --- */
+.botonArrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  padding: 4px;
+}
+
+.iconArrowDown {
+  width: 16px;
+  height: 16px;
+  color: inherit; /* antes era #000: no se veía sobre fondo oscuro */
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.iconArrowDownOpen {
+  transform: rotate(180deg);
+}
+
+/* --- Submenú animado (módulo y secciones anidadas) --- */
+.submenu {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden; /* evita que los links ocultos reciban foco con Tab */
+  transition:
+    grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease,
+    visibility 0s linear 0.3s;
+}
+
+.submenuOpen {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease,
+    visibility 0s linear 0s;
+}
+
+.submenuInner {
+  min-height: 0;
+  overflow: hidden;
+  padding-left: 12px;
+}
+
+/* Cada hijo baja con retraso escalonado (">" para afectar solo al nivel propio) */
+.submenu > .submenuInner > * {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.submenuOpen > .submenuInner > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.submenuOpen > .submenuInner > *:nth-child(1) { transition-delay: 0.04s; }
+.submenuOpen > .submenuInner > *:nth-child(2) { transition-delay: 0.08s; }
+.submenuOpen > .submenuInner > *:nth-child(3) { transition-delay: 0.12s; }
+.submenuOpen > .submenuInner > *:nth-child(4) { transition-delay: 0.16s; }
+.submenuOpen > .submenuInner > *:nth-child(5) { transition-delay: 0.2s; }
+.submenuOpen > .submenuInner > *:nth-child(6) { transition-delay: 0.24s; }
+
+/* Guía vertical de los sub-links de una sección anidada */
+.submenu .submenu > .submenuInner {
+  margin-left: 14px;
+  padding-left: 8px;
+  border-left: 1px solid var(--sb-line);
+}
+
+/* --- Scrollbar discreto --- */
+.seccion2::-webkit-scrollbar {
+  width: 6px;
+}
+
+.seccion2::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+}
+
+.seccion2::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* --- Modo colapsado --- */
+.collapsed {
+  width: 64px;
+}
+
+.collapsed .seccion1 {
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 6px;
+}
+
+
+.collapsed .seccion2 {
+  align-items: center;
+  padding: 14px 6px;
+  overflow-x: hidden;
+}
+
+.collapsed .seccion2 p {
+  margin: 10px 0;
+  justify-content: center;
+}
+
+.collapsed .label,
+.collapsed .botonArrow,
+.collapsed .submenu {
+  display: none;
+}
+
+.collapsed .iconMaleta {
+  margin-right: 0;
+}
+
+/* --- Respeta a quien tiene animaciones reducidas en el sistema --- */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .submenu,
+  .submenuOpen,
+  .submenu > .submenuInner > *,
+  .iconArrowDown {
+    transition: none !important;
+  }
+}
+/* --- Botón logo (modo colapsado): el logo se cambia por el icono al hover --- */
+.botonLogo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--sb-text-strong);
+  transition: background-color 0.15s ease;
+}
+
+.botonLogo:hover {
+  background-color: var(--sb-hover);
+}
+
+.botonLogo:focus-visible {
+  outline: 2px solid var(--sb-focus);
+  outline-offset: 1px;
+}
+
+.logoImg {
+  max-width: 32px;
+  height: auto;
+  display: block;
+  transition: opacity 0.15s ease;
+}
+
+.iconExpandir {
+  position: absolute;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.botonLogo:hover .logoImg,
+.botonLogo:focus-visible .logoImg {
+  opacity: 0;
+}
+
+.botonLogo:hover .iconExpandir,
+.botonLogo:focus-visible .iconExpandir {
+  opacity: 1;
+}

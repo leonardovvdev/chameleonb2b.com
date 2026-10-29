@@ -1,0 +1,103 @@
+.contenedor {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ayuda {
+  margin: 0;
+  font-size: 13px;
+  color: #5b7bb5;
+}
+
+.textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 96px;
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid #e3e9f4;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  color: #111a3e;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+}
+
+.textarea:hover,
+.textarea:focus {
+  outline: none;
+  border-color: #b0b8cc;
+}
+
+.texto {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #111a3e;
+  white-space: pre-wrap;
+}
+
+.botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btnPrimario,
+.btnSecundario,
+.btnPeligro {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.btnPrimario {
+  background: #1f2e45;
+  border: 1px solid #1f2e45;
+  color: #ffffff;
+}
+
+.btnPrimario:hover:not(:disabled) {
+  background: #34455f;
+}
+
+.btnPrimario:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnSecundario {
+  background: #ffffff;
+  border: 1px solid #e3e9f4;
+  color: #111a3e;
+}
+
+.btnSecundario:hover {
+  background: #f4f6fb;
+  border-color: #b0b8cc;
+}
+
+.btnPeligro {
+  background: #ffffff;
+  border: 1px solid #f0c4c4;
+  color: #d64545;
+}
+
+.btnPeligro:hover {
+  background: #fdf2f2;
+  border-color: #d64545;
+}
+
+.tarjeta {
+  padding: 14px 16px;
+  background: #f4f6fb;
+  border: 1px solid #e3e9f4;
+  border-radius: 12px;
+}

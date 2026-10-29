@@ -1,0 +1,98 @@
+.seccion {
+    margin: 20px 20px 0px 20px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.tarjeta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px;
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
+    min-width: 0;
+}
+
+/* Caja del icono */
+.iconoCaja {
+    flex-shrink: 0;
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+}
+
+.icono {
+    width: 24px;
+    height: 24px;
+}
+
+.azul    { background: #E8EEFD; color: #3B82F6; }
+.verde   { background: #DCFCE7; color: #15803D; }
+.naranja { background: #FFEDD5; color: #F97316; }
+.rojo    { background: #FFE4E6; color: #E11D48; }
+
+/* Textos */
+.textos {
+    flex: 1;
+    min-width: 0;
+}
+
+.valor {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #111A3E;
+    line-height: 1.2;
+}
+
+.etiqueta {
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    color: #6B7A99;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Porcentaje / tendencia */
+.porcentaje,
+.tendenciaSube {
+    flex-shrink: 0;
+    align-self: flex-end;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 12.5px;
+}
+
+.porcentaje {
+    color: #6B7A99;
+}
+
+.tendenciaSube {
+    color: #16A34A;
+    font-weight: 600;
+}
+
+.flecha {
+    width: 13px;
+    height: 13px;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+    .seccion {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 560px) {
+    .seccion {
+        grid-template-columns: 1fr;
+    }
+}

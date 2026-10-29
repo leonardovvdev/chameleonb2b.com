@@ -1,0 +1,174 @@
+.seccion {
+    margin: 10px 20px 0;
+    padding: 14px 22px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr auto;
+    align-items: center;
+    gap: 16px;
+    background-color: white;
+
+    border-radius: 12px 12px 0 0;
+}
+
+/* Caja blanca común a los 4 controles */
+.caja {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-sizing: border-box;
+    height: 44px;
+    padding: 0 14px;
+    background-color: white;
+    border: 1px solid #E3E9F4;
+    border-radius: 10px;
+    min-width: 0;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.caja:hover,
+.caja:focus-within {
+    border-color: #B0B8CC;
+}
+
+.icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: #111A3E;
+}
+.iconPlus {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: white;
+}
+
+/* Búsqueda */
+.input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 13px;
+    color: #111A3E;
+}
+
+.input::placeholder {
+    color: #5B7BB5;
+}
+
+.input::-webkit-search-cancel-button {
+    display: none;
+}
+
+/* Selects */
+.select {
+    flex: 1;
+    min-width: 0;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 13px;
+    color: #111A3E;
+    cursor: pointer;
+}
+
+/* Fecha */
+.fecha {
+    flex: 1;
+    font-size: 13px;
+    color: #111A3E;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Botones de acción */
+.acciones {
+    display: flex;
+    gap: 10px;
+}
+
+.boton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    height: 44px;
+    padding: 0 16px;
+    white-space: nowrap;
+
+    background-color: #1F2E45;
+    color: #ffffff;
+    border: 1px solid #1F2E45;
+    border-radius: 10px;
+
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.boton:hover:not(:disabled) {
+    background-color: #34455F;
+    border-color: #34455F;
+}
+
+.boton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.boton:focus-visible {
+    outline: 2px solid #1F2E45;
+    outline-offset: 2px;
+}
+
+/* Variante secundaria (Registrar Ausencia) */
+.botonSecundario {
+    background-color: #ffffff;
+    color: #111A3E;
+    border-color: #E3E9F4;
+}
+
+.botonSecundario:hover:not(:disabled) {
+    background-color: #F4F6FB;
+    border-color: #B0B8CC;
+}
+
+.iconPlusSecundario {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: #111A3E;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+    .seccion {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* La búsqueda y las acciones ocupan toda la fila */
+    .seccion > :first-child,
+    .acciones {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 560px) {
+    .seccion {
+        grid-template-columns: 1fr;
+    }
+
+    .acciones .boton {
+        flex: 1;
+    }
+}

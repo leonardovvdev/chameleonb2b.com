@@ -1,0 +1,211 @@
+.barrasuperior {
+  width: 100%;
+  height: 56px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 20px;
+  box-sizing: border-box;
+
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* =========================
+   MIGAS DE PAN
+   ========================= */
+
+.izquierda {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.migas {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.migaGrupo,
+.migaActual {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Hamburguesa: oculta en escritorio, visible en móvil */
+.botonMenu {
+  display: none;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #4b5563;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.botonMenu:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.botonMenu:active {
+  background-color: #f3f4f6;
+}
+
+.iconHamburguesa {
+  width: 22px;
+  height: 22px;
+}
+
+@media (max-width: 768px) {
+  .botonMenu {
+    display: flex;
+  }
+}
+
+.iconoSeccion {
+  width: 22px;
+  height: 22px;
+  color: #4b5563;
+  flex-shrink: 0;
+}
+
+.migaGrupo {
+  color: #4b5563;
+}
+
+.migaSeparador {
+  color: #9ca3af;
+}
+
+.migaActual {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+/* =========================
+   DERECHA
+   ========================= */
+
+.usuario {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: auto;
+}
+
+/* Campana con punto de notificación */
+
+.botonCampana {
+  position: relative;
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #4b5563;
+  cursor: pointer;
+}
+
+.botonCampana:hover {
+  background-color: #f3f4f6;
+}
+
+.iconoCampana {
+  width: 22px;
+  height: 22px;
+}
+
+.puntoNotificacion {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+
+  width: 8px;
+  height: 8px;
+
+  border-radius: 50%;
+  background-color: #ef4444;
+  border: 1.5px solid #ffffff;
+  box-sizing: content-box;
+}
+
+/* Avatar */
+
+.avatar {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background-color: #2563eb;
+}
+
+.imagenUsuario {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.iconUser {
+  width: 19px;
+  height: 19px;
+  color: #ffffff;
+}
+
+/* Datos del usuario */
+
+.datosUsuario {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.datosUsuario p {
+  margin: 0;
+  line-height: 1.2;
+}
+
+.nombreUsuario {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.rolUsuario {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.iconoChevron {
+  width: 18px;
+  height: 18px;
+  color: #4b5563;
+  flex-shrink: 0;
+}

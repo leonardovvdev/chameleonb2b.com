@@ -1,0 +1,15 @@
+.seccion {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  line-height: 0; /* evita huecos por línea de texto bajo el video */
+}
+
+.seccion video {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 0;
+}

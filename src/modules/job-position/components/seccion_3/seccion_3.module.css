@@ -1,0 +1,164 @@
+/* ───────────── Tarjeta ─────────────
+ * Variables opcionales (--alto-fila, --alto-header, --padding-seccion,
+ * --separacion-inferior, --alto-paginacion): si la vista no las define
+ * se usan los valores por defecto de abajo.
+ */
+.seccion {
+    background-color: white;
+    border-radius: 0 0 10px 10px;
+    padding: var(--padding-seccion, 20px);
+    margin: 0 20px var(--separacion-inferior, 20px) 20px;
+    font-family: "Inter", sans-serif;
+}
+
+.textoError {
+    color: #DC2626;
+    font-size: 13px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* ───────────── Tabla ─────────────
+ * table-layout: fixed + colgroup => el ancho de columnas es estable
+ * y el texto largo se trunca en lugar de aumentar el alto de la fila.
+ */
+.tabla {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.colNombre      { width: 28%; }
+.colDescripcion { width: 48%; }
+.colAcciones    { width: 24%; }
+
+.tabla thead th {
+    height: var(--alto-header, 44px);
+    padding: 0 8px;
+    box-sizing: border-box;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 1px solid #E5E7EB;
+}
+
+.tabla tbody td {
+    height: var(--alto-fila, 56px);
+    padding: 0 8px;
+    box-sizing: border-box;
+    border-bottom: 1px solid #F3F4F6;
+    color: #374151;
+    vertical-align: middle;
+}
+
+/* Solo las celdas de texto se truncan: la de acciones necesita mostrar sus botones */
+.celdaTexto {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.filaVacia td {
+    border-bottom: 1px solid #F3F4F6;
+}
+
+/* ───────────── Acciones ───────────── */
+.acciones {
+    position: relative;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.botonAccion {
+    height: 28px;
+    padding: 0 10px;
+    background: none;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    font: inherit;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.botonAccion + .botonAccion {
+    margin-left: 6px;
+}
+
+.botonAccion:hover {
+    background-color: #F3F4F6;
+}
+
+.botonAccion:focus-visible {
+    outline: 2px solid #3B82F6;
+    outline-offset: 2px;
+}
+
+/* "Eliminar": se marca en rojo al pasar el cursor */
+.botonPeligro:hover {
+    background-color: #FEF2F2;
+    border-color: #FECACA;
+    color: #DC2626;
+}
+
+/* ───────────── Paginación ───────────── */
+.paginacion {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+    height: calc(var(--alto-paginacion, 44px) - 16px);
+    margin-top: 16px;
+}
+
+.paginacion button {
+    background: none;
+    border: 1px solid #E5E7EB;
+    border-radius: 6px;
+    min-width: 28px;
+    height: 28px;
+    font-size: 13px;
+    color: #374151;
+    cursor: pointer;
+}
+
+.paginacion button:disabled {
+    color: #D1D5DB;
+    cursor: not-allowed;
+}
+
+.paginaActiva {
+    background-color: #EFF6FF;
+    border-color: #3B82F6 !important;
+    color: #3B82F6 !important;
+}
+
+/* ───────────── Animación de cambio de página ───────────── */
+
+/* Recorta solo en horizontal para no cortar contenido de las últimas filas */
+.tablaViewport {
+    overflow-x: clip;
+}
+
+.tablaPagina {
+    animation: entrarPagina 0.35s cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+}
+
+@keyframes entrarPagina {
+    from {
+        opacity: 0;
+        transform: translateX(calc(var(--dir, 1) * 32px));
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tablaPagina {
+        animation: none;
+    }
+}

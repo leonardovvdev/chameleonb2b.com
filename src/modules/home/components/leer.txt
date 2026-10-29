@@ -1,0 +1,3 @@
+seccion_1 es el fondo 
+seccion_2 es logo y la descripción parte izquierda
+seccion_3 es el modal de login parte derecha

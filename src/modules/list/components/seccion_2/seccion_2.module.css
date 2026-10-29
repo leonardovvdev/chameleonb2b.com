@@ -1,0 +1,111 @@
+.seccion{
+    border-radius: 10px 10px 0px 0px;
+    padding: 10px;
+    margin: 20px 20px 0px 20px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: start;
+    gap: 12px;
+    background-color: white;
+}
+
+/* Búsqueda */
+.busqueda{
+    display: flex;
+    font-size: 12px;
+}
+
+.searchWrapper{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-sizing: border-box;
+    height: 40px;
+    width: 280px;
+    padding: 0 14px;
+    border: 1px solid #E0E0E0;
+    border-radius: 10px;
+    background-color: white;
+    transition: border-color 0.2s ease;
+}
+
+.searchWrapper:hover,
+.searchWrapper:focus-within{
+    border-color: #B0B0B0;
+}
+
+.iconLupa{
+    width: 20px;
+    height: 20px;
+    color: #9CA3AF;
+    flex-shrink: 0;
+}
+
+.searchWrapper input{
+    border: none;
+    outline: none;
+    font-size: 13px;
+    color: #374151;
+    width: 100%;
+    background: transparent;
+}
+
+.searchWrapper input::placeholder{
+    color: #9CA3AF;
+}
+
+.searchWrapper input[type="search"]::-webkit-search-cancel-button{
+    display: none;
+}
+
+/* Filtros */
+.filtro{
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.srOnly{
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.select{
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    box-sizing: border-box;
+    height: 40px;
+    min-width: 160px;
+    padding: 0 36px 0 14px;
+    border: 1px solid #E0E0E0;
+    border-radius: 10px;
+    font-size: 13px;
+    color: #374151;
+    background-color: white;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+}
+
+.select:hover{
+    border-color: #B0B0B0;
+}
+
+.select:focus{
+    outline: none;
+    border-color: #B0B0B0;
+}

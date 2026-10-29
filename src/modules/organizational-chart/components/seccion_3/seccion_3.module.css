@@ -1,0 +1,361 @@
+.seccion {
+  padding: 32px;
+  box-sizing: border-box;
+  min-height: 100%;
+}
+
+.estado {
+  color: #667085;
+  font-size: 0.95rem;
+}
+
+.estado.error {
+  color: #b42318;
+}
+
+.encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 24px;
+}
+
+.titulo {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+  color: #0f2a5c;
+}
+
+.botonPdf {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  background: #3561b9;
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(53, 97, 185, 0.3);
+  transition: background 0.18s ease, opacity 0.18s ease;
+}
+
+.botonPdf:hover:not(:disabled) {
+  background: #284b91;
+}
+
+.botonPdf:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* ===== Lienzo: escala por ancho; scroll vertical de la página,
+   scroll horizontal solo si ni con la escala mínima cabe ===== */
+.lienzo {
+  width: 100%;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 8px;
+}
+
+/* Ocupa exactamente el tamaño ya escalado; margin auto lo centra */
+.caja {
+  flex-shrink: 0;
+  margin: 0 auto;
+}
+
+.escala {
+  width: max-content;
+  transform-origin: top left;
+}
+
+/* ===== Lámina: es lo que se mide y lo que va al PDF =====
+   Contiene el logo (arriba a la izquierda) y el organigrama,
+   sobre un fondo degradado celeste → blanco. */
+.contenido {
+  --w: 220px; /* ancho de tarjeta */
+  --t: 40px; /* posición de la línea troncal en grupos apilados */
+  --gap: 24px; /* alto de conectores */
+  --linea: #9db7e0; /* color de conectores */
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: max-content;
+  min-width: 320px;
+  box-sizing: border-box;
+  padding: 20px 24px 28px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #d9ebfb 0%, #eaf4fd 45%, #ffffff 100%);
+}
+
+/* Logo en la esquina superior izquierda */
+.cabeceraLogo {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.logo {
+  display: block;
+  height: 86px;
+  max-width: 200px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Árbol propiamente dicho */
+.arbol {
+  align-self: center;
+  display: flex;
+  align-items: flex-start;
+  width: max-content;
+}
+
+/* ===== Rama / nodo ===== */
+.rama {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+
+.tarjeta {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  width: var(--w);
+  min-height: 64px;
+  background: #ffffff;
+  border: 1px solid #cfdcf1;
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: left;
+  box-shadow:
+    0 1px 2px rgba(15, 42, 92, 0.05),
+    0 3px 8px rgba(53, 97, 185, 0.1);
+  transition: box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.tarjeta:hover {
+  border-color: #9db7e0;
+  box-shadow:
+    0 4px 10px rgba(15, 42, 92, 0.08),
+    0 8px 20px rgba(53, 97, 185, 0.16);
+}
+
+/* Raíces (nivel más alto) */
+.tarjeta.raiz {
+  background: linear-gradient(135deg, #3f6fcb, #2b53a3);
+  border-color: #2b53a3;
+}
+
+.tarjeta.raiz .nombre {
+  color: #ffffff;
+}
+
+.tarjeta.raiz .cargo {
+  color: #dbe7fb;
+}
+
+.avatar,
+.avatarPlaceholder {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.avatar {
+  object-fit: cover;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px #cfdcf1;
+}
+
+.avatarPlaceholder {
+  background: linear-gradient(135deg, #5b86d6, #2b53a3);
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px #cfdcf1;
+}
+
+.tarjeta.raiz .avatarPlaceholder {
+  background: linear-gradient(135deg, #ffffff33, #ffffff1a);
+  box-shadow: 0 0 0 1px #ffffff66;
+}
+
+.textos {
+  min-width: 0;
+  flex: 1;
+}
+
+.nombre {
+  margin: 0 0 2px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  color: #0f2a5c;
+  overflow-wrap: anywhere;
+}
+
+.cargo {
+  margin: 0;
+  font-weight: 500;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  color: #5b6f94;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  overflow-wrap: anywhere;
+}
+
+/* ===== Línea que baja desde una tarjeta con hijos ===== */
+.tarjeta.conHijos::after {
+  content: "";
+  position: absolute;
+  bottom: calc(var(--gap) * -1);
+  left: 50%;
+  width: 2px;
+  height: var(--gap);
+  background: var(--linea);
+  transform: translateX(-1px);
+}
+
+/* ===== Hijos en horizontal ===== */
+.hijos {
+  display: flex;
+  padding-top: var(--gap);
+}
+
+.hijos > .rama::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: var(--gap);
+  background: var(--linea);
+  transform: translateX(-1px);
+}
+
+.hijos > .rama::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--linea);
+}
+
+.hijos > .rama:first-child::after {
+  left: 50%;
+  width: 50%;
+}
+
+.hijos > .rama:last-child::after {
+  width: 50%;
+}
+
+.hijos > .rama:only-child::after {
+  display: none;
+}
+
+/* ===== Hijos apilados en vertical (todos son hojas) =====
+   Ancho de la rama = troncal + codo (20px) + tarjeta.
+   Así la tarjeta padre queda centrada y alineada con el conector superior. */
+.ramaApilada {
+  width: calc(var(--t) + 20px + var(--w));
+  padding: 0;
+}
+
+.ramaApilada > .tarjeta.conHijos::after {
+  left: calc((var(--t) - 20px) / 2);
+  height: 20px;
+  bottom: -20px;
+}
+
+.hijosApilados {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 20px;
+  padding-left: calc(var(--t) + 20px);
+}
+
+.itemApilado {
+  position: relative;
+}
+
+/* Codo horizontal hacia la tarjeta */
+.itemApilado::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -20px;
+  width: 20px;
+  height: 2px;
+  background: var(--linea);
+  transform: translateY(-1px);
+}
+
+/* Tramo de la línea troncal */
+.itemApilado::after {
+  content: "";
+  position: absolute;
+  left: -21px;
+  top: -10px;
+  width: 2px;
+  height: calc(100% + 10px);
+  background: var(--linea);
+}
+
+.itemApilado:first-child::after {
+  top: -20px;
+  height: calc(100% + 20px);
+}
+
+.itemApilado:last-child::after {
+  height: calc(50% + 10px);
+}
+
+.itemApilado:first-child:last-child::after {
+  height: calc(50% + 20px);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  .seccion {
+    padding: 24px;
+  }
+
+  .titulo {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .seccion {
+    padding: 16px;
+  }
+
+  .titulo {
+    font-size: 1.1rem;
+  }
+
+  .encabezado {
+    margin-bottom: 16px;
+  }
+}

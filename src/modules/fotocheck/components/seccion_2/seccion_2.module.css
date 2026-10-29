@@ -1,0 +1,124 @@
+.fotocheck {
+  position: relative;
+  overflow: hidden;
+  width: 200px;
+  min-height: 310px;
+  margin: 20px auto 0;
+  padding: 18px 14px 44px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(30, 42, 74, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Curvas decorativas de las esquinas */
+.fotocheck::before,
+.fotocheck::after {
+  content: "";
+  position: absolute;
+  width: 100px;
+  height: 70px;
+  background: linear-gradient(135deg, #3b82f6, #7c3aed);
+}
+
+.fotocheck::before {
+  top: 0;
+  right: 0;
+  border-bottom-left-radius: 100% 100%;
+}
+
+.fotocheck::after {
+  bottom: 0;
+  left: 0;
+  border-top-right-radius: 100% 100%;
+}
+
+.fotocheck > * {
+  position: relative;
+  z-index: 1;
+}
+
+.logo {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #1e2a4a;
+}
+
+.logoIcono {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #2563eb, #1e3a8a);
+}
+
+.fotoWrapper {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 2px solid #2563eb;
+  overflow: hidden;
+  background: #e5e7eb;
+}
+
+.fotoWrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.fotoVacia {
+  width: 100%;
+  height: 100%;
+}
+
+.nombre {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: #1e2a4a;
+}
+
+.rol {
+  padding: 2px 16px;
+  border-radius: 999px;
+  background: #7c3aed;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.dato {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: 18px;
+}
+
+.dato small {
+  display: block;
+  font-size: 8px;
+  color: #6b7280;
+}
+
+.dato strong {
+  font-size: 10px;
+  color: #1e2a4a;
+}
+
+.datoIcono {
+  font-size: 13px;
+}
+
+.qr {
+  width: 72px;
+  height: 72px;
+  background: #111;
+  border-radius: 3px;
+}

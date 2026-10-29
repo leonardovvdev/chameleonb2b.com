@@ -1,0 +1,572 @@
+/* ============================================================
+   LISTA / TABLA (antes en seccion_1.module.css)
+   ============================================================ */
+
+.seccion {
+  padding-top: 20px;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.btnAgregar {
+  background-color: #2b5aa0;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: Arial, Helvetica, sans-serif;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btnAgregar:hover {
+  background-color: #234a85;
+}
+
+/* ---------- Tabla ---------- */
+.tabla {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  overflow: hidden;
+  font-size: 13px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.header,
+.fila {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1.2fr 1fr 1fr;
+  align-items: center;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.header {
+  background-color: #f9f9f9;
+  font-weight: 600;
+  color: #555;
+}
+
+.header span {
+  padding: 10px 12px;
+  border-right: 1px solid #e0e0e0;
+  text-align: center;
+}
+
+.header span:last-child {
+  border-right: none;
+}
+
+.fila {
+  background-color: #fff;
+  padding: 10px 0;
+}
+
+.fila:last-child {
+  border-bottom: none;
+}
+
+.nombreCol {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-right: 1px solid #e0e0e0;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #eef2f8;
+  color: #2b5aa0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+
+/* Renombrado: colisionaba con .nombre del fotocheck frente */
+.nombreFila {
+  font-weight: 500;
+  color: #222;
+  margin: 0;
+}
+
+.celda {
+  text-align: center;
+  padding: 6px 12px;
+  border-right: 1px solid #e0e0e0;
+  color: #333;
+}
+
+.celda:last-child {
+  border-right: none;
+}
+
+.marcaBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  background-color: #e8eef7;
+  color: #2b5aa0;
+}
+
+.sinResultados {
+  text-align: center;
+  padding: 20px;
+  color: #888;
+}
+
+.btnVer {
+  background: transparent;
+  border: 1px solid #2b5aa0;
+  color: #2b5aa0;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: Arial, Helvetica, sans-serif;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btnVer:hover {
+  background-color: #eef2f8;
+}
+
+/* ---------- Modal ---------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 16px;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 6px;
+  width: 100%;
+  max-width: 420px;
+  max-height: 90vh;
+  overflow-y: auto;
+  font-family: Arial, Helvetica, sans-serif;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modalHeader h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+  margin: 0;
+}
+
+.btnCerrar {
+  background: transparent;
+  border: 1px solid #ccc;
+  color: #555;
+  border-radius: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnCerrar:hover {
+  background-color: #f5f5f5;
+}
+
+.modalBody {
+  padding: 20px;
+}
+
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.field input {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #222;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.field input:focus {
+  border-color: #2b5aa0;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.btnPrimario {
+  background-color: #2b5aa0;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnPrimario:hover {
+  background-color: #234a85;
+}
+
+.btnSecundario {
+  background: transparent;
+  border: 1px solid #ccc;
+  color: #333;
+  border-radius: 4px;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnSecundario:hover {
+  background-color: #f5f5f5;
+}
+
+/* Renombrado: colisionaba con .infoBlock del fotocheck frente */
+.infoBlockModal {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 12px 14px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.rowData {
+  display: flex;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.k {
+  color: #888;
+  min-width: 60px;
+  font-weight: 600;
+}
+
+.v {
+  color: #222;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.qrWrapper {
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+/* ============================================================
+   FOTOCHECK — FRENTE (antes en fotocheck.module.css)
+   ============================================================ */
+
+.fotocheckFrente {
+  width: 300px;
+  min-height: 480px;
+  background: #2258e0;
+  border-radius: 0px;
+  padding: 18px 18px 20px;
+  color: #fff;
+  font-family: "Arial", sans-serif;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+.fotocheckFrente hr {
+  border: none;
+  border-top: 3px solid #fff;
+  margin: 10px 0;
+}
+
+/* --- Div 1: logo + (sede/tienda/codigo/planilla | foto) --- */
+.topSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.logoHeaderFrente {
+  width: 130px;
+  object-fit: contain;
+  align-self: center;
+}
+
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.infoLeft {
+  flex: 0 0 30%;
+  display: flex;
+  flex-direction: column;
+}
+
+.infoRight {
+  flex: 0 0 55%;
+  height: 160px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.foto {
+  width: 115px;
+  height: 100%;
+  min-height: 92px;
+  border-radius: 5px;
+  object-fit: cover;
+  margin-left: -10px;
+  background: #fff;
+}
+
+/* Renombrado: colisionaba con .infoBlock del modal (tabla) */
+.infoBlockFrente {
+  margin-bottom: 2px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #fff;
+}
+
+.label1 {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 5px;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #fff;
+}
+
+.sede,
+.codigo {
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+}
+
+/* --- Div 2: nombre + cargo --- */
+
+.nombre {
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.cargo {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 16px;
+  max-width: 120px;
+  line-height: 1.3;
+  color: #fff;
+}
+
+.cargoLinea {
+  display: block;
+}
+
+/* --- Div 3: qr | mascota --- */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 16px;
+}
+
+.footerLeft {
+  display: flex;
+  align-items: flex-end;
+}
+
+.footerRight {
+  display: flex;
+  align-items: flex-end;
+}
+
+.qr {
+  background: #2258e0;
+  line-height: 0;
+}
+
+.logoFooter {
+  width: 94px;
+  object-fit: contain;
+}
+
+/* ============================================================
+   FOTOCHECK — TRASERA (antes en fotocheck_parte_trasera.module.css)
+   ============================================================ */
+
+.fotocheckTrasera {
+  width: 300px;
+  min-height: 480px;
+  background: #fff;
+  border: 3px solid #f7f7f7;
+
+  padding: 16px 16px 18px;
+  color: #222;
+  font-family: "Arial", sans-serif;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.fotocheckTrasera hr {
+  border: none;
+  border-top: 3px solid #000;
+  margin: 8px 0;
+}
+
+.imagen {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.contenido {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.logoHeaderTrasera {
+  width: 240px;
+  object-fit: contain;
+}
+
+/* Cada bloque (Misión / Visión / Valores): etiqueta a la izq. en columna fija,
+   contenido a la derecha, todos alineados en la misma X */
+.bloque {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  column-gap: 8px;
+  align-items: start;
+  margin-bottom: 2px;
+}
+
+.titulo {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.texto {
+  font-size: 11px;
+  line-height: 1.35;
+  margin: 0 0 4px;
+  color: #111;
+}
+
+/* Fila de Valores: dos columnas de items lado a lado dentro del área de contenido */
+.valoresFila {
+  display: flex;
+  flex-direction: row;
+  gap: 18px;
+}
+
+/* DNI / TLF: misma rejilla que .bloque para que el valor arranque
+   exactamente en la misma X que el texto de Misión/Visión */
+.datoFila {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+
+  margin: 3px 0;
+}
+
+.datoEtiqueta {
+  font-size: 15px;
+  font-weight: 700;
+  color: #222;
+}
+
+.datoValor {
+  display: flex;
+  justify-content: end;
+  font-size: 15px;
+  font-weight: 700;
+  color: #222;
+}
+
+.datoEtiqueta1 {
+  font-size: 15px;
+  display: flex;
+  justify-content: start;
+  font-weight: 700;
+  color: #222;
+}
+
+.datoValor1 {
+  display: flex;
+  justify-content: end;
+  font-size: 15px;
+  font-weight: 700;
+  color: #222;
+}

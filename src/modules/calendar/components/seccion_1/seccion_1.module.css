@@ -1,0 +1,265 @@
+.seccion {
+  --bg: #f4f6fb;
+  --card: #ffffff;
+  --text: #1c2233;
+  --muted: #8a92a6;
+  --border: #e6e9f2;
+  --accent: #5b6cff;
+  --accent-soft: #eceeff;
+  --holiday: #ff5d73;
+  --holiday-soft: #ffe9ec;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  padding: 24px;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  .seccion {
+    --bg: #0f1220;
+    --card: #181c2e;
+    --text: #eef0f8;
+    --muted: #8087a0;
+    --border: #262b42;
+    --accent: #7c8aff;
+    --accent-soft: #232848;
+    --holiday: #ff7a8c;
+    --holiday-soft: #3a2230;
+  }
+}
+
+.calendar,
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(20, 30, 70, 0.06);
+}
+
+/* ---------- Cabecera ---------- */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.month {
+  margin: 0;
+  font-size: 1.8rem;
+  text-transform: capitalize;
+  letter-spacing: -0.5px;
+}
+
+.year {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+}
+
+.navBtn,
+.todayBtn {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navBtn {
+  width: 38px;
+  height: 38px;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.todayBtn {
+  padding: 0 16px;
+  font-weight: 600;
+}
+
+.navBtn:hover,
+.todayBtn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ---------- Grilla ---------- */
+.weekdays,
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.weekdays {
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.grid {
+  transition: opacity 0.2s;
+}
+
+.grid.loading {
+  opacity: 0.6;
+}
+
+.day {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.day:hover {
+  background: var(--accent-soft);
+  transform: translateY(-2px);
+}
+
+.weekend {
+  color: var(--muted);
+}
+
+.holiday {
+  background: var(--holiday-soft);
+  color: var(--holiday);
+  font-weight: 700;
+}
+
+.today {
+  border-color: var(--accent);
+}
+
+.selected {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(91, 108, 255, 0.35);
+}
+
+.selected:hover {
+  background: var(--accent);
+}
+
+.dot {
+  position: absolute;
+  bottom: 7px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--holiday);
+}
+
+.selected .dot {
+  background: #fff;
+}
+
+/* ---------- Panel lateral ---------- */
+.panelDate {
+  margin: 0 0 16px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.holidayCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--holiday), #ff9a6b);
+  color: #fff;
+}
+
+.holidayCard span {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.panelTitle {
+  margin: 24px 0 10px;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-transform: capitalize;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.list button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.list button:hover {
+  background: var(--accent-soft);
+}
+
+.list b {
+  min-width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--holiday-soft);
+  color: var(--holiday);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.error {
+  margin-top: 14px;
+  color: var(--holiday);
+  font-size: 0.9rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 860px) {
+  .seccion {
+    grid-template-columns: 1fr;
+    padding: 12px;
+  }
+}

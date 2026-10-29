@@ -26,7 +26,7 @@ import FotocheckRoutes from "../../modules/fotocheck/routes/fotocheck.routes";
 
 export default function AppRoutes() {
     return (
-        <BrowserRouter>git ls-files src/modules/organizational-chart/routes/
+        <BrowserRouter>
             <AuthProvider>
                 <Routes>
 

@@ -16,17 +16,17 @@ const ICONOS = {
   acceso: icon.iconLock,
 };
 
-const ETIQUETA_SUELDO: Record<TipoPago, string> = {
-  monthly: "Sueldo mensual",
-  weekly: "Sueldo semanal",
-  daily: "Sueldo diario",
-};
+// const ETIQUETA_SUELDO: Record<TipoPago, string> = {
+//   monthly: "Sueldo mensual",
+//   weekly: "Sueldo semanal",
+//   daily: "Sueldo diario",
+// };
 
-const formatearSueldo = (valor: string) => {
-  const n = Number(valor);
-  if (!valor || Number.isNaN(n)) return "—";
-  return `S/ ${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
+// const formatearSueldo = (valor: string) => {
+//   const n = Number(valor);
+//   if (!valor || Number.isNaN(n)) return "—";
+//   return `S/ ${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+// };
 
 /* Caja con icono (para las filas que sí llevan icono) */
 const CajaIcono = ({ Icono }: { Icono: (props: { className?: string }) => ReactNode }) => (

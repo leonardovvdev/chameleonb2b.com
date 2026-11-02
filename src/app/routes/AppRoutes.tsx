@@ -22,6 +22,7 @@ import CalendarRoutes from "../../modules/calendar/routes/calendar.routes";
 import ReportsRoutes from "../../modules/report/routes/report.routes";
 import ExcelRoutes from "../../modules/excel/routes/excel.routes";
 import FotocheckRoutes from "../../modules/fotocheck/routes/fotocheck.routes";
+import ConfigurationRoutes from "../../modules/configuration/routes/configuration.routes";
 
 
 export default function AppRoutes() {
@@ -57,6 +58,7 @@ export default function AppRoutes() {
                             {CalendarRoutes}
                             {ReportsRoutes}              
                             {ExcelRoutes}
+                            {ConfigurationRoutes}
                     
                         </Route>
                     </Route>
@@ -73,6 +75,9 @@ export default function AppRoutes() {
                     />
 
 
+                    
+                    
+                    
                 </Routes>
             </AuthProvider>
         </BrowserRouter>

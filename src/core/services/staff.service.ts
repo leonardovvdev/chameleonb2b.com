@@ -9,7 +9,6 @@ import type {
   UpdateStaffPayload,
 } from "../types";
 
-/** Una página del personal del customer (con sus filtros). */
 export const listStaff = (
   page: number,
   pageSize: number,
@@ -26,7 +25,6 @@ export const listStaff = (
     },
   }).then(({ items, count }) => ({ data: items, count }));
 
-/** Todo el personal, del que tiene más subordinados al que no tiene ninguno. */
 export const getSupervisors = (): Promise<SupervisorItem[]> =>
   conCache(
     CLAVE_SUPERVISORES,
@@ -34,7 +32,6 @@ export const getSupervisors = (): Promise<SupervisorItem[]> =>
     { ttlMs: 2 * 60_000 },
   );
 
-/** Los jefes (y su cantidad de subordinados) cambian al crear, editar o activar personal. */
 const CLAVE_SUPERVISORES = "staffs:supervisors";
 const invalidarSupervisores = () => invalidarCache(CLAVE_SUPERVISORES);
 
@@ -57,14 +54,9 @@ export const createStaff = (payload: CreateStaffPayload) =>
     invalidarSupervisores,
   );
 
-/** Datos completos del personal (horario, refrigerio, feriados, sueldo, contrato) para editarlo. */
 export const getStaffDetail = (stffId: number): Promise<StaffDetail> =>
   callBackend<StaffDetail>("staffs/detail", { query: { id: stffId } });
 
-/**
- * Guarda la edición: el backend, en una sola operación, actualiza los datos,
- * ACTIVA al personal y crea un NUEVO registro en staff_contracts.
- */
 export const updateStaffContract = (stffId: number, payload: CreateStaffPayload) =>
   callBackend<{ stff_id: number }>("staffs/contract", {
     method: "PUT",
@@ -72,7 +64,6 @@ export const updateStaffContract = (stffId: number, payload: CreateStaffPayload)
     body: { ...payload },
   }).finally(invalidarSupervisores);
 
-/** Sube la foto del personal. Devuelve el nombre del archivo y su URL firmada. */
 export const uploadStaffImage = (
   stffId: number,
   archivo: File,

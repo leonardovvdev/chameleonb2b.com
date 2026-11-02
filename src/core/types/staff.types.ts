@@ -86,9 +86,18 @@ export interface CreateStaffPayload extends UpdateStaffPayload {
     delayAmount: number;
     refreshmentDelayType: "per_minute" | "per_hour" | "fixed";
     refreshmentDelayAmount: number;
-  } | null;
+ } | null;
+  /** Qué incidencias se descuentan (staff_contracts.cntrt_descount_*). */
+  discountFlags: { absence: boolean; delay: boolean; refreshmentDelay: boolean };
+  /** AFP elegida; null = sin descuento de AFP (staff_afp_history). */
+  afpId: number | null;
 }
 
+/** AFP disponible (tabla `afp`). */
+export interface AfpItem {
+  id: number;
+  name: string;
+}
 /**
  * GET /staffs/detail?id=
  * Misma forma que recibe el POST de creación, más la foto.

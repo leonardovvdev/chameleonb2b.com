@@ -1,78 +1,104 @@
-import { useState } from "react";
+import { useEffect, useRef } from "react";
+import type { ReportController } from "../../controllers/report.controller";
+import type { StaffOption } from "../../types/report.types";
 import style from "./seccion_1.module.css";
 
-// Datos de ejemplo (sin backend)
-const PERSONAL = [
-  { nombre: "Lucía Ramírez", cargo: "Cajera", contratos: 3 },
-  { nombre: "Carlos Mendoza", cargo: "Almacenero", contratos: 2 },
-  { nombre: "Rosa Quispe", cargo: "Vendedora", contratos: 1 },
-];
+const fullName = (s: StaffOption) => `${s.stff_lastname} ${s.stff_name}`;
+const initials = (s: StaffOption) => `${s.stff_lastname[0] ?? ""}${s.stff_name[0] ?? ""}`.toUpperCase();
 
-const iniciales = (nombre: string) =>
-  nombre
-    .split(" ")
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+const Avatar = ({ staff }: { staff: StaffOption }) =>
+  staff.img_url ? (
+    <img className={style.avatar} src={staff.img_url} alt="" loading="lazy" />
+  ) : (
+    <span className={style.avatar}>{initials(staff)}</span>
+  );
 
-const Seccion_1 = () => {
-  const [actual, setActual] = useState(0);
-  const [abierto, setAbierto] = useState(false);
-  const persona = PERSONAL[actual];
+const Seccion_1 = ({ c }: { c: ReportController }) => {
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  // Cierra el menú al hacer clic fuera.
+  useEffect(() => {
+    if (!c.menuOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) c.setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [c.menuOpen, c]);
 
   return (
     <div className={style.seccion}>
-      <div className={style.persona}>
-        <div className={style.avatar}>{iniciales(persona.nombre)}</div>
-
-        <div className={style.info}>
-          <span className={style.nombre}>{persona.nombre}</span>
-          <span className={style.cargo}>
-            {persona.cargo} · {persona.contratos} contratos
-          </span>
-        </div>
-
-        <div className={style.cambiarWrap}>
-          <button
-            type="button"
-            className={style.cambiar}
-            onClick={() => setAbierto((v) => !v)}
-          >
-            Cambiar personal
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
-
-          {abierto && (
-            <ul className={style.menu}>
-              {PERSONAL.map((p, i) => (
-                <li key={p.nombre}>
-                  <button
-                    type="button"
-                    className={i === actual ? style.itemActivo : style.item}
-                    onClick={() => {
-                      setActual(i);
-                      setAbierto(false);
-                    }}
-                  >
-                    {p.nombre}
-                  </button>
-                </li>
-              ))}
-            </ul>
+      <div className={style.selector} ref={wrapRef}>
+        <button type="button" className={style.trigger} onClick={() => c.setMenuOpen(!c.menuOpen)} aria-expanded={c.menuOpen}>
+          {c.staff ? (
+            <>
+              <span className={style.nombre}>{fullName(c.staff)}</span>
+              <Avatar staff={c.staff} />
+            </>
+          ) : (
+            <span className={style.placeholder}>Seleccionar personal</span>
           )}
-        </div>
+          <span className={style.caret} aria-hidden>▾</span>
+        </button>
+
+        {c.menuOpen && (
+          <div className={style.menu}>
+            <input
+              className={style.search}
+              type="search"
+              placeholder="Buscar por nombre o apellido"
+              value={c.search}
+              onChange={(e) => c.setSearch(e.target.value)}
+              autoFocus
+            />
+            <ul className={style.list}>
+              {c.staffLoading && <li className={style.estado}>Cargando personal…</li>}
+              {!c.staffLoading && c.staffError && <li className={style.estadoError}>{c.staffError}</li>}
+              {!c.staffLoading && !c.staffError && c.staffOptions.length === 0 && (
+                <li className={style.estado}>No se encontraron resultados.</li>
+              )}
+              {!c.staffLoading &&
+                c.staffOptions.map((s) => (
+                  <li key={s.stff_id}>
+                    <button
+                      type="button"
+                      className={s.stff_id === c.staff?.stff_id ? style.itemActivo : style.item}
+                      onClick={() => c.selectStaff(s)}
+                    >
+                      <span className={style.itemNombre}>{fullName(s)}</span>
+                      <Avatar staff={s} />
+                    </button>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        )}
       </div>
 
-      <button type="button" className={style.excel}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="7 10 12 15 17 10" />
-          <line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
-        Descargar Excel
+      <div className={style.contratos}>
+        {c.staff && c.contractsLoading && <span className={style.estado}>Cargando contratos…</span>}
+        {c.staff && !c.contractsLoading && c.contracts.length === 0 && (
+          <span className={style.estado}>Este trabajador no tiene contratos registrados.</span>
+        )}
+        {c.contracts.map((ct) => (
+          <button
+            key={ct.id}
+            type="button"
+            className={ct.id === c.contractId ? style.contratoActivo : style.contrato}
+            onClick={() => c.selectContract(ct.id)}
+          >
+            CONTRATO {ct.number}
+          </button>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        className={style.excel}
+        onClick={() => void c.exportExcel()}
+        disabled={!c.report || c.exporting || c.reportLoading}
+      >
+        {c.exporting ? "GENERANDO…" : "DESCARGAR EXCEL"}
       </button>
     </div>
   );

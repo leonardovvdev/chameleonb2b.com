@@ -1,75 +1,67 @@
 .seccion {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 16px;
-  padding: 10px 14px;
+  padding: 12px 14px;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 16px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.persona {
-  display: flex;
+.selector {
+  position: relative;
+}
+
+.trigger {
+  display: inline-flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 14px 8px 8px;
+  min-width: 280px;
+  padding: 6px 12px 6px 14px;
   background: #f8fafc;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
+  cursor: pointer;
 }
 
-.avatar {
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #0f1b3d;
-  color: #fff;
-  font-weight: 700;
-  font-size: 14px;
-  border-radius: 10px;
-}
-
-.info {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.25;
+.trigger:hover {
+  border-color: #bfdbfe;
 }
 
 .nombre {
-  font-size: 15px;
+  flex: 1;
+  text-align: left;
+  font-size: 14px;
   font-weight: 700;
   color: #111827;
 }
 
-.cargo {
-  font-size: 12px;
+.placeholder {
+  flex: 1;
+  text-align: left;
+  font-size: 14px;
   color: #6b7280;
 }
 
-.cambiarWrap {
-  position: relative;
+.caret {
+  color: #6b7280;
 }
 
-.cambiar {
+.avatar {
+  flex: none;
+  width: 36px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 500;
-  color: #1d4ed8;
-  background: #dbeafe;
-  border: 1px solid #bfdbfe;
-  border-radius: 999px;
-  cursor: pointer;
-}
-
-.cambiar:hover {
-  background: #cfe2ff;
+  justify-content: center;
+  object-fit: cover;
+  background: #0f1b3d;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 10px;
 }
 
 .menu {
@@ -77,23 +69,45 @@
   top: calc(100% + 6px);
   left: 0;
   z-index: 20;
-  min-width: 180px;
-  margin: 0;
-  padding: 6px;
-  list-style: none;
+  width: min(380px, 90vw);
+  padding: 8px;
   background: #fff;
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  font-size: 13px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  outline: none;
+}
+
+.search:focus {
+  border-color: #1d4ed8;
+}
+
+.list {
+  max-height: 300px;
+  margin: 8px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
 }
 
 .item,
 .itemActivo {
   width: 100%;
-  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 10px;
   text-align: left;
-  font-size: 13px;
-  color: #111827;
   background: transparent;
   border: 0;
   border-radius: 8px;
@@ -106,24 +120,85 @@
 
 .itemActivo {
   background: #dbeafe;
-  color: #1d4ed8;
+}
+
+.itemNombre {
+  font-size: 13px;
+  color: #111827;
+}
+
+.estado,
+.estadoError {
+  padding: 10px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.estadoError {
+  color: #b91c1c;
+}
+
+.contratos {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.contrato,
+.contratoActivo {
+  padding: 8px 14px;
+  font-size: 12px;
   font-weight: 600;
+  color: #1d4ed8;
+  background: #fff;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.contrato:hover {
+  background: #eff6ff;
+}
+
+.contratoActivo {
+  color: #fff;
+  background: #1d4ed8;
+  border-color: #1d4ed8;
 }
 
 .excel {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  margin-left: auto;
   padding: 10px 18px;
   font-size: 13px;
   font-weight: 600;
   color: #fff;
-  background: #15803d;
+  background: #1d4ed8;
   border: 0;
   border-radius: 10px;
   cursor: pointer;
 }
 
-.excel:hover {
-  background: #166534;
+.excel:hover:not(:disabled) {
+  background: #1e40af;
+}
+
+.excel:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 720px) {
+  .trigger {
+    min-width: 0;
+    width: 100%;
+  }
+  .selector {
+    width: 100%;
+  }
+  .excel {
+    width: 100%;
+    margin-left: 0;
+  }
 }

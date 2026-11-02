@@ -359,14 +359,14 @@ const Sidebar = () => {
         )}
 
         {/* ALMACENAMIENTO (link directo, al mismo nivel que Personal y Asistencia) */}
-        {tieneAlgunModulo && (
+        {/* {tieneAlgunModulo && (
           <p className={style.tituloSeccion}>
             <NavLink to="/storage" className={tituloLinkClass}>
               <icon.iconFile className={style.iconMaleta} />
               <span className={style.label}>Almacenamiento</span>
             </NavLink>
           </p>
-        )}
+        )} */}
 
         {/* CALENDARIO */}
         {/* {tieneAlgunModulo && (
@@ -398,9 +398,11 @@ const Sidebar = () => {
 
         {/* CONFIGURACIÓN */}
         {tieneAlgunModulo && (
-          <p className={style.tituloSeccion} title="Configuración">
-            <icon.iconConfiguration className={style.iconMaleta} />
-            <b className={style.label}>Configuración</b>
+          <p className={style.tituloSeccion}>
+            <NavLink to="/configuration" className={tituloLinkClass} title="Mapa">
+              <icon.iconConfiguration className={style.iconMaleta} />
+              <span className={style.label}>Configuración</span>
+            </NavLink>
           </p>
         )}
       </section>

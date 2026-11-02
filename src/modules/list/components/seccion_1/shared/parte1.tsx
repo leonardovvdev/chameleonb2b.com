@@ -104,7 +104,7 @@ export const validarPaso1 = (
 };
 
 /* ───────────── Select personalizado ───────────── */
-interface SelectProps {
+export interface SelectProps {
   id: string;
   value: string;
   opciones: Opcion[];
@@ -126,7 +126,7 @@ const Avatar = ({ opcion }: { opcion: Opcion }) =>
     </span>
   );
 
-const Select = ({
+export const Select = ({
   id,
   value,
   opciones,

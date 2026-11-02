@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { getAfps } from "../../../../../core/services";
 import style from "./modal.module.css";
 import { icon } from "../../../../../core/icons";
 import type { FormState } from "./parte1";
@@ -72,7 +73,24 @@ const Parte5 = ({
   // La foto nueva tiene prioridad sobre la que ya tenía
   const fotoUrl = fotoNuevaUrl ?? fotoActualUrl;
   const [avatarFallo, setAvatarFallo] = useState(false);
+  const [afpNombre, setAfpNombre] = useState("—");
+  useEffect(() => {
+    if (!honorarios.descuentaAfp) return;
+    getAfps()
+      .then((items) =>
+        setAfpNombre(items.find((a) => String(a.id) === honorarios.afpId)?.name ?? "—"),
+      )
+      .catch(() => setAfpNombre("—"));
+  }, [honorarios.descuentaAfp, honorarios.afpId]);
 
+  const descuentosActivos =
+    [
+      honorarios.descuentaAusencia && "Ausencia",
+      honorarios.descuentaTardanza && "Tardanza",
+      honorarios.descuentaDemora && "Demora",
+    ]
+      .filter(Boolean)
+      .join(", ") || "Ninguno";
   // Si cambia la URL del encargado, se vuelve a intentar cargarla
   useEffect(() => setAvatarFallo(false), [jefeAvatar]);
 
@@ -230,8 +248,12 @@ const Parte5 = ({
           </h4>
 
           <div className={style.resSueldo}>
-            <p className={style.resEtiqueta}>{ETIQUETA_SUELDO[honorarios.tipoPago]}</p>
-            <p className={style.resSueldoValor}>{formatearSueldo(honorarios.sueldo)}</p>
+            <p className={style.resEtiqueta}>Descuentos</p>
+            <p className={style.resValor}>{descuentosActivos}</p>
+          </div>
+          <div className={style.resSueldo}>
+            <p className={style.resEtiqueta}>AFP</p>
+            <p className={style.resValor}>{honorarios.descuentaAfp ? afpNombre : "No aplica"}</p>
           </div>
         </section>
       </div>

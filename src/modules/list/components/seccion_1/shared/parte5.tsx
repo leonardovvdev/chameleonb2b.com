@@ -5,7 +5,7 @@ import { icon } from "../../../../../core/icons";
 import type { FormState } from "./parte1";
 import type { HorarioState, RefrigerioState } from "./parte2";
 import { DIAS_SEMANA, type FeriadoState } from "./parte3";
-import type { HonorariosState, TipoPago } from "./parte4";
+import type { HonorariosState } from "./parte4";
 
 /* Iconos de `icon` usados en este paso. */
 const ICONOS = {

@@ -10,6 +10,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import style from "./sidebar.module.css";
 import { supabase } from "../../../../lib/supabase";
 import { icon } from "../../../../core/icons";
+import { obtenerMisModulos } from "../../../../core/services";
 
 // Clase compartida para los links de sub-menú
 const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -120,57 +121,38 @@ const Sidebar = () => {
       }
     };
 
-  useEffect(() => {
-    const cargarPermisos = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const user = sessionData.session?.user;
+useEffect(() => {
+  const cargarPermisos = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
 
-      if (!user) {
+    if (!sessionData.session?.user) {
+      localStorage.removeItem("aw_erp_jwt");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const nombresModulos = await obtenerMisModulos();
+
+      if (nombresModulos.length === 0) {
         localStorage.removeItem("aw_erp_jwt");
         navigate("/login");
         return;
       }
-
-      const { data: customer, error: customerError } = await supabase
-        .from("customers")
-        .select("cust_id")
-        .eq("cust_auth_id", user.id)
-        .maybeSingle();
-
-      if (customerError || !customer) {
-        localStorage.removeItem("aw_erp_jwt");
-        navigate("/login");
-        return;
-      }
-
-      const { cust_id } = customer;
-
-      const { data: custModules, error: modulesError } = await supabase
-        .from("customer_modules")
-        .select("mod_id, modules(mod_name, mod_is_active)")
-        .eq("cust_id", cust_id)
-        .eq("cust_mod_is_active", true);
-
-      if (modulesError || !custModules || custModules.length === 0) {
-        localStorage.removeItem("aw_erp_jwt");
-        navigate("/login");
-        return;
-      }
-
-      const nombresModulos = custModules
-        .filter((cm: any) => cm.modules?.mod_is_active !== false)
-        .map((cm: any) => cm.modules?.mod_name)
-        .filter(Boolean);
 
       setCanPersonalDevelopment(nombresModulos.includes("Desarrollo Personal"));
       setCanBusinessManagement(nombresModulos.includes("Gestión Empresarial"));
       setCanDigitalManagement(nombresModulos.includes("Gestión Digital"));
-
       setLoading(false);
-    };
+    } catch (err) {
+      console.error("Error al cargar los módulos:", err);
+      localStorage.removeItem("aw_erp_jwt");
+      navigate("/login");
+    }
+  };
 
-    cargarPermisos();
-  }, [navigate]);
+  cargarPermisos();
+}, [navigate]);
 
   if (loading) {
     return null;

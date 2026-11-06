@@ -17,3 +17,7 @@ export interface Customer {
 
 /** Customer de la sesión actual. Lanza `BackendError` (con el mensaje del backend) si no se puede obtener. */
 export const obtenerCustomerActual = (): Promise<Customer> => callBackend<Customer>("customers/me");
+
+/** Nombres de los módulos activos del customer de la sesión (dueño o personal). */
+export const obtenerMisModulos = async (): Promise<string[]> =>
+  (await callBackend<{ modules: string[] }>("customer-modules")).modules;

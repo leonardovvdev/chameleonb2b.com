@@ -21,12 +21,15 @@ export interface Staff {
 
 /* ───────────── Lista: GET /staffs ───────────── */
 
+/** Valores que acepta el filtro de estado ("" = todos). */
+export type EstadoFiltro = "" | "ACTIVO" | "INACTIVO";
+
 /** Filtros de la lista. El backend ignora los vacíos y cualquier `estado` distinto de ACTIVO / INACTIVO. */
 export interface StaffFilters {
   busqueda?: string;
   cargoId?: number | string | null;
   rolId?: number | string | null;
-  estado?: string;
+  estado?: EstadoFiltro;
 }
 
 export interface StaffListItem {

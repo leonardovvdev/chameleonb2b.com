@@ -31,6 +31,7 @@
   border-radius: 16px;
   box-shadow: 0 24px 60px rgba(17, 26, 62, 0.22);
   color: var(--texto);
+  font-family: "Inter", sans-serif;
 }
 
 /* ───────── Encabezado ───────── */
@@ -50,12 +51,14 @@
   margin: 0;
   font-size: 18px;
   font-weight: 600;
+  font-family: "Inter", sans-serif;
 }
 
 .subtitulo {
   margin: 4px 0 0;
   font-size: 13px;
   color: var(--texto-suave);
+  font-family: "Inter", sans-serif;
 }
 
 .botonIcono {

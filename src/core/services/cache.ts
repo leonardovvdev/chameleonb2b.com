@@ -25,6 +25,12 @@ const memoria = new Map<string, Entrada<unknown>>();
 const enCurso = new Map<string, Promise<unknown>>();
 let usuarioActual: string | null = null;
 
+/**
+ * Sube cada vez que se invalida la caché. Una consulta que empezó antes de invalidar
+ * no guarda su resultado al terminar (sería un dato viejo).
+ */
+let version = 0;
+
 const leerStorage = <T>(clave: string): Entrada<T> | null => {
   try {
     const raw = sessionStorage.getItem(PREFIJO + clave);
@@ -69,17 +75,25 @@ export async function conCache<T>(
   const pendiente = enCurso.get(clave) as Promise<T> | undefined;
   if (pendiente) return pendiente;
 
-  const promesa = consulta()
+  const versionAlEmpezar = version;
+
+  const promesa: Promise<T> = consulta()
     .then((valor) => {
-      const entrada: Entrada<T> = {
-        valor,
-        expiraEn: Date.now() + (ttlSegunValor ? ttlSegunValor(valor) : ttlMs),
-      };
-      memoria.set(clave, entrada);
-      if (persistir) guardarStorage(clave, entrada);
+      // Si se invalidó la caché mientras esperaba, el valor se entrega pero no se guarda.
+      if (versionAlEmpezar === version) {
+        const entrada: Entrada<T> = {
+          valor,
+          expiraEn: Date.now() + (ttlSegunValor ? ttlSegunValor(valor) : ttlMs),
+        };
+        memoria.set(clave, entrada);
+        if (persistir) guardarStorage(clave, entrada);
+      }
       return valor;
     })
-    .finally(() => enCurso.delete(clave));
+    .finally(() => {
+      // Solo se quita la propia: otra consulta nueva con la misma clave no debe perderse.
+      if (enCurso.get(clave) === promesa) enCurso.delete(clave);
+    });
 
   enCurso.set(clave, promesa);
   return promesa;
@@ -87,6 +101,8 @@ export async function conCache<T>(
 
 /** Borra las entradas cuya clave empieza con `prefijo` (tras crear / editar datos). */
 export function invalidarCache(prefijo: string): void {
+  version++;
+
   for (const clave of [...memoria.keys()]) {
     if (clave.startsWith(prefijo)) memoria.delete(clave);
   }

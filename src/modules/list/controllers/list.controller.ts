@@ -16,6 +16,13 @@ const REFRESCO_AUTOMATICO_MS = 30_000;
 /** Agrupa ráfagas de eventos en una sola consulta. */
 const RETARDO_EVENTOS_MS = 400;
 
+/** Evento interno: el modal de "Nuevo Registro" avisa a la lista que hubo un alta o edición. */
+const EVENTO_STAFFS_CAMBIARON = "staffs:cambiaron";
+
+/** Pide a la lista que se recargue ya (no depende de Realtime ni del refresco automático). */
+export const notificarStaffsCambiaron = () =>
+  window.dispatchEvent(new Event(EVENTO_STAFFS_CAMBIARON));
+
 export const FILTROS_STAFF_INICIALES: StaffFilters = {
   busqueda: "",
   cargoId: null,
@@ -86,7 +93,7 @@ export const useStaffController = (
   const grupoVigente = useRef("");
 
   // La búsqueda de texto se retrasa; los selects se aplican al instante.
-  const busqueda = useValorConRetardo(filtros.busqueda.trim(), RETARDO_BUSQUEDA_MS);
+  const busqueda = useValorConRetardo((filtros.busqueda ?? "").trim(), RETARDO_BUSQUEDA_MS);
   const { cargoId, rolId, estado } = filtros;
 
   const filtrosConsulta = useMemo<StaffFilters>(
@@ -263,10 +270,18 @@ export const useStaffController = (
     const alVolver = () => document.visibilityState === "visible" && programar();
     document.addEventListener("visibilitychange", alVolver);
 
+    // Alta o edición hecha desde esta misma pantalla: se recarga de inmediato.
+    const alCambiar = () => {
+      clearTimeout(temporizador);
+      void recargarRef.current();
+    };
+    window.addEventListener(EVENTO_STAFFS_CAMBIARON, alCambiar);
+
     return () => {
       clearTimeout(temporizador);
       clearInterval(intervalo);
       document.removeEventListener("visibilitychange", alVolver);
+      window.removeEventListener(EVENTO_STAFFS_CAMBIARON, alCambiar);
       void supabase.removeChannel(canal);
     };
   }, [custId]);

@@ -8,7 +8,7 @@ import style from "./auth_callback.page.module.css";
 /** Marco común: fondo de selva + tarjeta blanca centrada (igual que el login). */
 const Pantalla = ({ children }: { children: ReactNode }) => (
   <div className={style.pantalla}>
-    <img className={style.fondo} src="./fondoselva.jpg" alt="" />
+    <img className={style.fondo} src="/fondoselva.jpg" alt="" />
     {children}
   </div>
 );

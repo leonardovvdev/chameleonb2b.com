@@ -3,6 +3,8 @@ import {
   ERROR_GENERICO,
   cerrarSesion,
   consumirModoGoogle,
+  dibujarBotonGoogle,
+  entrarConCredencialGoogle,
   entrarConGoogle,
   entrarConPassword,
   leerErrorBackend,
@@ -11,6 +13,7 @@ import {
   loginEnBackendGoogle,
   obtenerSesion,
   registrarConGoogle,
+  verificarCuentaGoogle,
 } from "../services/login.service";
 
 // ─────────────── Tipos ───────────────
@@ -214,6 +217,71 @@ export async function procesarRetornoGoogle(
     return await entrarAlDestino(data, refreshCustomer);
   } catch (err) {
     console.error("Error inesperado al volver de Google:", err);
+    return { ok: false, error: ERROR_GENERICO };
+  }
+}
+
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ////////////            Botón de Google (sin redirección)            ///////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** Dibuja el botón de Google. Devuelve un error de texto si no se pudo cargar. */
+export async function mostrarBotonGoogle(
+  contenedor: HTMLElement,
+  modo: "login" | "registro",
+  alRecibir: (credential: string) => void,
+): Promise<{ error?: string }> {
+  try {
+    await dibujarBotonGoogle(contenedor, modo === "login" ? "signin_with" : "signup_with", alRecibir);
+    return {};
+  } catch (err) {
+    console.error("Google:", err);
+    return { error: "No se pudo cargar el botón de Google. Revisa tu conexión." };
+  }
+}
+
+/**
+ * "Acceder con Google": primero pregunta al backend si la cuenta existe.
+ * Si NO existe, no se crea nada en Supabase (sin usuario y sin JWT) y se pide registrarse.
+ * Si existe, recién ahí se emite el JWT.
+ */
+export async function loginConCredencialGoogle(
+  credential: string,
+  refreshCustomer: () => Promise<void>,
+): Promise<ResultadoRetornoGoogle> {
+  try {
+    const { data: cuenta, error: errorCuenta } = await verificarCuentaGoogle(credential);
+    if (errorCuenta || !cuenta) {
+      const { mensaje } = await leerErrorBackend(errorCuenta);
+      return { ok: false, error: mensaje };
+    }
+    if (!cuenta.exists) return { ok: false, requiereRegistro: true, correo: cuenta.email };
+
+    const { error: authError } = await entrarConCredencialGoogle(credential);
+    if (authError) return { ok: false, error: "No se pudo iniciar con Google. Intenta de nuevo." };
+
+    const { data, error: backendError } = await loginEnBackendGoogle();
+    if (backendError) return await fallarYCerrarSesion(backendError);
+
+    return await entrarAlDestino(data, refreshCustomer);
+  } catch (err) {
+    console.error("Error inesperado al entrar con Google:", err);
+    return { ok: false, error: ERROR_GENERICO };
+  }
+}
+
+/** "Crear cuenta con Google": aquí sí se emite el JWT y luego el backend crea el customer. */
+export async function crearCuentaConCredencialGoogle(
+  credential: string,
+  refreshCustomer: () => Promise<void>,
+): Promise<ResultadoLogin> {
+  try {
+    const { error: authError } = await entrarConCredencialGoogle(credential);
+    if (authError) return { ok: false, error: "No se pudo iniciar con Google. Intenta de nuevo." };
+
+    return await crearConGoogle(refreshCustomer);
+  } catch (err) {
+    console.error("Error inesperado al crear la cuenta con Google:", err);
     return { ok: false, error: ERROR_GENERICO };
   }
 }

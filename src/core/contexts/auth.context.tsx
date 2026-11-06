@@ -1,5 +1,5 @@
 // core/contexts/AuthContext.tsx
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { supabase } from "../../lib/supabase";
 import { obtenerCustIdPorAuthId } from "../services/auth.service.ts";
@@ -27,27 +27,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [custNameBucket, setCustNameBucket] = useState<string | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  const resolverCustomer = useCallback(async (userId: string) => {
-    const { data: customer, error } = await obtenerCustIdPorAuthId(userId);
+  const resueltoPara = useRef<string | null>(null); // usuario ya resuelto
+  const enCurso = useRef<{ userId: string; p: Promise<void> } | null>(null); // llamada en vuelo
 
-    if (error || !customer) {
-      // Es normal justo después del login con Google: el customer
-      // se crea en el backend desde /auth/callback.
-      console.warn("Customer aún no disponible:", error ?? "sin fila");
-      setCustId(null);
-      setCustNameBucket(null);
-      return;
-    }
+  const resolverCustomer = useCallback(async (userId: string, forzar = false) => {
+    // Ya lo tenemos y no se pidió refrescar → no llamar al backend
+    if (!forzar && resueltoPara.current === userId) return;
+    // Hay una llamada en vuelo para este usuario → reutilizarla
+    if (enCurso.current?.userId === userId) return enCurso.current.p;
 
-    setCustId(customer.cust_id);
-    setCustNameBucket(customer.cust_name_bucket);
+    const p = (async () => {
+      const { data: customer, error } = await obtenerCustIdPorAuthId(userId);
+
+      if (error || !customer) {
+        // Es normal justo después del login con Google: el customer
+        // se crea en el backend desde /auth/callback.
+        console.warn("Customer aún no disponible:", error ?? "sin fila");
+        resueltoPara.current = null;
+        setCustId(null);
+        setCustNameBucket(null);
+        return;
+      }
+
+      resueltoPara.current = userId;
+      setCustId(customer.cust_id);
+      setCustNameBucket(customer.cust_name_bucket);
+    })().finally(() => {
+      enCurso.current = null;
+    });
+
+    enCurso.current = { userId, p };
+    return p;
   }, []);
 
   /** Vuelve a consultar el customer de la sesión actual (úsalo tras registrarlo). */
   const refreshCustomer = useCallback(async () => {
     const { data } = await supabase.auth.getSession();
     if (data.session?.user) {
-      await resolverCustomer(data.session.user.id);
+      await resolverCustomer(data.session.user.id, true); // forzar: tras registrar hay que releer
     }
   }, [resolverCustomer]);
 
@@ -68,20 +85,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       bindCacheToUser(session?.user?.id ?? null); // otra cuenta o cierre de sesión → caché vacía
       setSession(session);
 
-      if (session?.user) {
-        // Sin await dentro del callback: evita bloqueos del cliente de auth.
-        setTimeout(() => {
-          void resolverCustomer(session.user.id);
-        }, 0);
-      } else {
+      if (!session?.user) {
+        resueltoPara.current = null;
         setCustId(null);
         setCustNameBucket(null);
         localStorage.removeItem("aw_erp_jwt");
+        return;
       }
+
+      // INITIAL_SESSION ya lo cubre inicializar(); TOKEN_REFRESHED no cambia al customer
+      if (event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") return;
+
+      // Sin await dentro del callback: evita bloqueos del cliente de auth.
+      setTimeout(() => {
+        void resolverCustomer(session.user.id);
+      }, 0);
     });
 
     return () => {

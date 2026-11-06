@@ -1,254 +1,159 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "../../../lib/supabase";
-import { useAuth } from "../../../core/contexts/auth.context";
-import { getCustomerJobPositions, getCustomerRoles } from "../../../core/services/catalog.service";
-import type { CustomerJobPosition, CustomerRole } from "../../../core/types";
-import {
-  createIncident,
-  deleteAttendance,
-  getAttendanceByDate,
-  getAttendanceDetail,
-  getIncidents,
-  getPendingAbsence,
-  getPendingCheckIn,
-  registerAbsence,
-  registerCheckIn,
-} from "../services/register.service";
-import type {
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";import type {
   ActualizarFiltro,
-  EstadoAsistencia,
-  IncidenciaDescuento,
-  ModoRegistro,
+  ActualizarFila,
+  Incidencia,
+  ListasResumen,
   NuevoRegistroControl,
+  PersonaResumen,
   RegisterFilters,
   RegisterSummary,
   RegistroDetalle,
   StaffAttendance,
   StaffPendiente,
 } from "../types/register.types";
+import {
+  createIncidencia,
+  crearAsistencia,
+  eliminarAsistencia,
+  getAsistenciasPorFecha,
+  getAttendanceDetail,
+  getCargos,
+  getIncidencias,
+  getPersonalActivo,
+  getPersonalElegible,
+  getRoles,
+  deleteIncidencia,
+  getPuedeEliminar,
+} from "../services/register.service";
+import type { CatalogoItem } from "../services/register.service";
 
-const SEGUNDOS_RESALTADO = 3;
-const MS_ESPERA_BUSQUEDA = 300;
-const MAX_DESCRIPCION_AUSENCIA = 200; // = VARCHAR(200) de att_justification_absence
+/* ───────── Reglas (ya no vienen de data.ts) ───────── */
+/** Cada cuánto se vuelve a pedir la lista de hoy (los registros también llegan desde la app móvil). */
+/** Respaldo por si se cae la conexión en vivo (lo normal es que Realtime avise al instante). */
+const INTERVALO_REFRESCO_MS = 60_000;/** Las fotos son URLs firmadas que duran 1 h: se reutilizan para que no parpadeen y se renuevan antes de vencer. */
+const RENOVAR_FOTOS_MS = 30 * 60_000;
+const HORA_INGRESO = "08:00";
+const TOLERANCIA_MINUTOS = 5;
+/** Duración máxima del refrigerio (min). Pasada esta duración + tolerancia = tardanza de refrigerio. */
+const RECESO_MAXIMO_MINUTOS = 60;
 const MESES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-/* ═════════════════════════════════════════════════════════════════════════════
- * Funciones de apoyo (antes en register.helpers.ts).
- * seccion_3 y seccion_4 las importan desde este mismo archivo.
- * ═════════════════════════════════════════════════════════════════════════════ */
 
-/* ───────── Fechas ───────── */
+/* ═══════════ Utilidades (fechas, horas, estado) ═══════════ */
 
-/** Fecha de HOY en hora local (no en UTC), formato YYYY-MM-DD. */
+const pad = (n: number): string => String(n).padStart(2, "0");
+
 export const getFechaLocalHoy = (): string => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
-/** "2026-10-26" → "26 Oct 2026" (con "Hoy, " delante si es hoy). */
+/** "2026-11-03" → "Hoy, 3 Nov 2026" o "3 Nov 2026". */
 export const textoFecha = (fecha: string, esHoy: boolean): string => {
-  const [year, month, day] = fecha.split("-").map(Number);
-  const texto = `${day} ${MESES[month - 1] ?? ""} ${year}`;
+  const [y, m, d] = fecha.split("-").map(Number);
+  const texto = `${d} ${MESES[m - 1] ?? ""} ${y}`;
   return esHoy ? `Hoy, ${texto}` : texto;
 };
 
-/* ───────── Horas ───────── */
-
-// PostgREST puede devolver "2026-10-26 13:05:00+00": se normaliza a ISO 8601
-// para que todos los navegadores (Safari incluido) lo entiendan.
-const normalizarTimestamp = (valor: string) =>
-  valor.replace(" ", "T").replace(/([+-]\d{2})$/, "$1:00");
-
-/**
- * Minutos desde las 00:00 en la HORA LOCAL del dispositivo.
- *  - timestamptz ("2026-10-26T13:05:00+00:00"): new Date() lo convierte de UTC a hora local.
- *  - time sin fecha ("08:05:00", como stff_schdl_start): se toma tal cual.
- */
+/** Timestamp ISO → minutos desde medianoche (hora local), o null. */
 export const aMinutos = (valor: string | null): number | null => {
   if (!valor) return null;
-
-  if (/^\d{4}-\d{2}-\d{2}/.test(valor)) {
-    const fecha = new Date(normalizarTimestamp(valor));
-    return Number.isNaN(fecha.getTime()) ? null : fecha.getHours() * 60 + fecha.getMinutes();
-  }
-
-  const m = valor.match(/^(\d{1,2}):(\d{2})/);
-  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+  const d = new Date(valor);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.getHours() * 60 + d.getMinutes();
 };
 
-/** "08:05 a. m." (hora local) o null si no hay valor. */
-export const formatHora = (valor: string | null): string | null => {
+/** Timestamp ISO → "HH:MM" (hora local), o "" si no hay valor. */
+export const formatHora = (valor: string | null): string => {
   const min = aMinutos(valor);
-  if (min === null) return null;
-  const h = Math.floor(min / 60);
-  const mm = min % 60;
-  const sufijo = h >= 12 ? "p. m." : "a. m.";
-  const h12 = h % 12 || 12;
-  return `${String(h12).padStart(2, "0")}:${String(mm).padStart(2, "0")} ${sufijo}`;
+  return min === null ? "" : `${pad(Math.floor(min / 60))}:${pad(min % 60)}`;
 };
 
-export const formatDuracion = (min: number): string =>
-  `${Math.floor(min / 60)}h ${String(min % 60).padStart(2, "0")}m`;
+/** Fecha (YYYY-MM-DD) + hora (HH:MM) locales → timestamp ISO. */
+export const aIsoLocal = (fecha: string, hhmm: string): string =>
+  new Date(`${fecha}T${hhmm}:00`).toISOString();
 
-/* ───────── Cálculos de una fila ───────── */
+export const formatDuracion = (minutos: number): string =>
+  minutos < 60 ? `${minutos}m` : `${Math.floor(minutos / 60)}h ${pad(minutos % 60)}m`;
 
-/** Total R = receso = fin de receso − inicio de receso. */
-export const minutosReceso = (a: StaffAttendance): number | null => {
-  const ini = aMinutos(a.att_inicio_receso);
-  const fin = aMinutos(a.att_fin_receso);
-  if (ini === null || fin === null || fin < ini) return null;
-  return fin - ini;
+const diferencia = (desde: string | null, hasta: string | null): number | null => {
+  if (!desde || !hasta) return null;
+  const min = Math.round((new Date(hasta).getTime() - new Date(desde).getTime()) / 60000);
+  return min >= 0 ? min : null;
 };
 
-/** Total L = (fin de jornada − inicio de jornada) − receso. */
+/** Total R: minutos de receso. */
+export const minutosReceso = (a: StaffAttendance): number | null =>
+  diferencia(a.att_refreshment_start, a.att_refreshment_end);
+
+/** Total L: minutos laborados (jornada menos receso). */
 export const minutosLaborados = (a: StaffAttendance): number | null => {
-  const ini = aMinutos(a.att_inicio_jornada);
-  const fin = aMinutos(a.att_fin_jornada);
-  if (ini === null || fin === null || fin < ini) return null;
-  const receso = minutosReceso(a) ?? 0;
-  return Math.max(0, fin - ini - receso);
+  const total = diferencia(a.att_schedule_start, a.att_schedule_end);
+  if (total === null) return null;
+  return Math.max(0, total - (minutosReceso(a) ?? 0));
 };
 
-/**
- * - null: todavía no registró ingreso.
- * - "tardanza": horario fijo y llegó después de (inicio + tolerancia).
- * - "puntual": llegó a tiempo, o su horario no exige hora de inicio (flexible / libre).
- */
-export const getEstado = (a: StaffAttendance): EstadoAsistencia => {
-  const ingreso = aMinutos(a.att_inicio_jornada);
-  if (ingreso === null) return null;
-
-  const inicioHorario = a.schedule_type === "fixed" ? aMinutos(a.schedule_start) : null;
-  if (inicioHorario === null) return "puntual";
-
-  return ingreso > inicioHorario + (a.schedule_tolerance ?? 0) ? "tardanza" : "puntual";
+const hhmmAMinutos = (hhmm: string): number => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
 };
 
-/** Incidencias = justificaciones registradas (ausencia, demora, demora de refrigerio). */
-export const getIncidentes = (a: StaffAttendance): number =>
-  [
-    a.att_justification_absence,
-    a.att_justification_delay,
-    a.att_justification_refreshment_delay,
-  ].filter((justificacion) => justificacion && justificacion.trim() !== "").length;
-
-/** Huella de las horas de una fila: sirve para detectar qué fila cambió. */
-export const firmaRegistro = (a: StaffAttendance): string =>
-  [a.att_inicio_jornada, a.att_inicio_receso, a.att_fin_receso, a.att_fin_jornada].join("|");
-
-/** Minúsculas y sin tildes, para buscar sin importar acentos. */
-export const normalizarTexto = (texto: string): string =>
-  texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-
-const mensajeDe = (error: unknown, porDefecto: string): string =>
-  error instanceof Error ? error.message : porDefecto;
-
-/* ═════════════════════════════════════════════════════════════════════════════
- * Caché en memoria. Vive FUERA del componente, así que sobrevive cuando el usuario
- * se va a otra página y vuelve: la tabla aparece al instante con lo último que se
- * vio y se refresca en segundo plano (sin "Cargando...").
- * Se vacía sola si cambia el usuario o se cierra la sesión.
- * ═════════════════════════════════════════════════════════════════════════════ */
-const MAX_FECHAS_EN_CACHE = 14;
-const MS_FOTO_VIGENTE = 50 * 60 * 1000; // las URLs firmadas del backend duran 60 min
-
-const cache = {
-  userId: null as string | null,
-  asistencia: new Map<string, { items: StaffAttendance[]; total: number }>(), // fecha → datos
-  fotos: new Map<number, { url: string; ts: number }>(), // stff_id → URL firmada
-  cargos: null as CustomerJobPosition[] | null,
-  roles: null as CustomerRole[] | null,
-  detalles: new Map<number, RegistroDetalle>(), // att_id → detalle del modal
-  incidencias: new Map<number, IncidenciaDescuento[]>(), // att_id → incidencias
+export const getEstado = (a: StaffAttendance): "puntual" | "tardanza" | "ausente" => {
+  const ingreso = aMinutos(a.att_schedule_start);
+  if (ingreso === null) return "ausente"; // sin hora de ingreso
+  return ingreso > hhmmAMinutos(HORA_INGRESO) + TOLERANCIA_MINUTOS ? "tardanza" : "puntual";
 };
 
-const usarCacheDe = (userId: string | null) => {
-  if (cache.userId === userId) return;
-  cache.userId = userId;
-  cache.asistencia.clear();
-  cache.fotos.clear();
-  cache.cargos = null;
-  cache.roles = null;
-  cache.detalles.clear();
-  cache.incidencias.clear();
+// Una sola regla para la tabla, el filtro "Ausente" y la card de Ausencias.
+const esAusente = (a: StaffAttendance): boolean => getEstado(a) === "ausente";
+
+/** Tardanza de refrigerio: el receso terminó y duró más de lo permitido. */
+const esTardanzaRefrigerio = (a: StaffAttendance): boolean => {
+  const min = minutosReceso(a);
+  return min !== null && min > RECESO_MAXIMO_MINUTOS + TOLERANCIA_MINUTOS;
 };
 
-const rutaDeFoto = (url: string) => url.split("?")[0];
+const aPersona = (p: {
+  stff_id: number;
+  stff_name: string;
+  stff_lastname: string;
+  img_url: string | null;
+}): PersonaResumen => ({
+  stff_id: p.stff_id,
+  stff_name: p.stff_name,
+  stff_lastname: p.stff_lastname,
+  img_url: p.img_url,
+});
+const aPersonaJustificada = (
+  a: StaffAttendance,
+  justificacion: string | null
+): PersonaResumen => ({
+  ...aPersona(a),
+  justificacion: justificacion?.trim() ? justificacion : null,
+});
+/** Columna "Incidencias": total de incidencias (staff_discount_incidents) de este registro. */
+export const getIncidentes = (a: StaffAttendance): number => a.incidents_count ?? 0;
 
-/**
- * Cada consulta trae URLs firmadas NUEVAS (token distinto) y el navegador volvería a
- * descargar todas las fotos. Si la foto es la misma y su URL sigue vigente, se conserva la anterior.
- */
-const conservarFotos = (items: StaffAttendance[]): StaffAttendance[] => {
-  const ahora = Date.now();
-  return items.map((fila) => {
-    if (!fila.img_url) {
-      cache.fotos.delete(fila.stff_id);
-      return fila;
-    }
-    const previa = cache.fotos.get(fila.stff_id);
-    if (
-      previa &&
-      ahora - previa.ts < MS_FOTO_VIGENTE &&
-      rutaDeFoto(previa.url) === rutaDeFoto(fila.img_url)
-    ) {
-      return previa.url === fila.img_url ? fila : { ...fila, img_url: previa.url };
-    }
-    cache.fotos.set(fila.stff_id, { url: fila.img_url, ts: ahora });
-    return fila;
-  });
-};
+const normalizar = (t: string): string =>
+  t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
-/** Guarda las filas de una fecha. Si no cambió nada devuelve el MISMO arreglo (React no repinta). */
-const guardarAsistenciaEnCache = (
-  fecha: string,
-  items: StaffAttendance[],
-  total: number
-): StaffAttendance[] => {
-  const previa = cache.asistencia.get(fecha);
-  const estable =
-    previa && JSON.stringify(previa.items) === JSON.stringify(items) ? previa.items : items;
+/* ═══════════ Hooks de los modales ═══════════ */
 
-  cache.asistencia.delete(fecha); // se reinserta al final: el más viejo queda primero
-  cache.asistencia.set(fecha, { items: estable, total });
-  if (cache.asistencia.size > MAX_FECHAS_EN_CACHE) {
-    const masViejo = cache.asistencia.keys().next().value;
-    if (masViejo !== undefined) cache.asistencia.delete(masViejo);
-  }
-  return estable;
-};
-
-/** Aplica `transformar` a las filas de TODAS las fechas guardadas en caché. */
-const mapearCache = (transformar: (items: StaffAttendance[]) => StaffAttendance[]) => {
-  cache.asistencia.forEach((entrada, fecha) => {
-    cache.asistencia.set(fecha, { ...entrada, items: transformar(entrada.items) });
-  });
-};
-
-/* ───────── Hooks de los modales de seccion_4 ───────── */
-
-/** Observación, rol y total de registros de una asistencia (con caché: al reabrir aparece al instante). */
 export const useDetalleRegistro = (attId: number) => {
-  const [detalle, setDetalle] = useState<RegistroDetalle | null>(
-    () => cache.detalles.get(attId) ?? null
-  );
-  const [cargando, setCargando] = useState(() => !cache.detalles.has(attId));
+  const [detalle, setDetalle] = useState<RegistroDetalle | null>(null);
+  const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelado = false;
     getAttendanceDetail(attId)
-      .then((nuevo) => {
+      .then((d) => {
         if (cancelado) return;
-        cache.detalles.set(attId, nuevo);
-        setDetalle(nuevo);
+        setDetalle(d);
         setError("");
       })
       .catch((e) => {
-        if (!cancelado) setError(mensajeDe(e, "No se pudo cargar el detalle del registro."));
+        if (!cancelado) setError(e instanceof Error ? e.message : "No se pudo cargar el detalle.");
       })
       .finally(() => {
         if (!cancelado) setCargando(false);
@@ -258,41 +163,48 @@ export const useDetalleRegistro = (attId: number) => {
     };
   }, [attId]);
 
-  /** Refleja un cambio ya guardado (ej. la observación) sin volver a pedir nada. */
-  const actualizarLocal = useCallback(
-    (parche: Partial<RegistroDetalle>) => {
-      setDetalle((previo) => {
-        if (!previo) return previo;
-        const nuevo = { ...previo, ...parche };
-        cache.detalles.set(attId, nuevo);
-        return nuevo;
-      });
-    },
-    [attId]
-  );
+  const actualizarLocal = useCallback((parche: Partial<RegistroDetalle>) => {
+    setDetalle((previo) => (previo ? { ...previo, ...parche } : previo));
+  }, []);
 
   return { detalle, cargando, error, actualizarLocal };
 };
 
-/** Incidencias de una asistencia + crear una nueva (con caché). */
+export const usePuedeEliminar = () => {
+  const [puede, setPuede] = useState(false);
+
+  useEffect(() => {
+    let cancelado = false;
+    getPuedeEliminar()
+      .then((v) => {
+        if (!cancelado) setPuede(v);
+      })
+      .catch(() => {
+        if (!cancelado) setPuede(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
+
+  return puede;
+};
+
 export const useIncidencias = (attId: number) => {
-  const [lista, setLista] = useState<IncidenciaDescuento[]>(
-    () => cache.incidencias.get(attId) ?? []
-  );
-  const [cargando, setCargando] = useState(() => !cache.incidencias.has(attId));
+  const [lista, setLista] = useState<Incidencia[]>([]);
+  const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelado = false;
-    getIncidents(attId)
-      .then((items) => {
+    getIncidencias(attId)
+      .then((l) => {
         if (cancelado) return;
-        cache.incidencias.set(attId, items);
-        setLista(items);
+        setLista(l);
         setError("");
       })
       .catch((e) => {
-        if (!cancelado) setError(mensajeDe(e, "No se pudieron cargar las incidencias."));
+        if (!cancelado) setError(e instanceof Error ? e.message : "No se pudieron cargar las incidencias.");
       })
       .finally(() => {
         if (!cancelado) setCargando(false);
@@ -304,441 +216,380 @@ export const useIncidencias = (attId: number) => {
 
   const crear = useCallback(
     async (descripcion: string, monto: number) => {
-      const nueva = await createIncident(attId, descripcion, monto);
-      setLista((previa) => {
-        const nuevaLista = [nueva, ...previa];
-        cache.incidencias.set(attId, nuevaLista);
-        return nuevaLista;
-      });
+      const nueva = await createIncidencia(attId, descripcion, monto);
+      setLista((previa) => [nueva, ...previa]);
     },
     [attId]
   );
 
-  return { lista, cargando, error, crear };
+  /** Devuelve cuántas incidencias quedan en el registro. */
+  const eliminar = useCallback(async (id: number) => {
+    const r = await deleteIncidencia(id);
+    setLista((previa) => previa.filter((i) => i.id !== id));
+    return r.total;
+  }, []);
+
+  return { lista, cargando, error, crear, eliminar };
 };
 
-/**
- * Cerebro de la página de asistencia. Hace 6 cosas:
- *   1. PROTEGE   la ruta (sin sesión → /login).
- *   2. TRAE      las asistencias de la fecha elegida desde backend-chameleonb2b.
- *   3. ESCUCHA   cambios en la tabla attendance (Realtime) y vuelve a traer.
- *   4. FILTRA    por texto, cargo y estado.
- *   5. RESUME    los números de las 4 tarjetas.
- *   6. REGISTRA  el ingreso de hoy desde el modal "Nuevo registro".
- * Las secciones solo dibujan lo que este hook les entrega.
- */
-export const useRegisterController = () => {
-  const navigate = useNavigate();
-  const { session, loadingAuth } = useAuth();
-  const haySesion = Boolean(session);
-  usarCacheDe(session?.user?.id ?? null);
+/* ═══════════ Controller de la página ═══════════ */
 
-  // ─── Estado ────────────────────────────────────────────────────────────────
-  const [filtros, setFiltros] = useState<RegisterFilters>(() => ({
+const mensajeDe = (e: unknown, porDefecto: string): string => (e instanceof Error ? e.message : porDefecto);
+
+export const useRegisterController = () => {
+  const hoy = getFechaLocalHoy();
+
+  const [filtros, setFiltros] = useState<RegisterFilters>({
     busqueda: "",
     cargo: "",
     estado: "",
-    fecha: getFechaLocalHoy(),
-  }));
+    fecha: hoy,
+  });
 
-  // Si ya se vio la asistencia de hoy, se arranca con ella (sin pantalla de "Cargando...").
-  const [filas, setFilas] = useState<StaffAttendance[]>(
-    () => cache.asistencia.get(getFechaLocalHoy())?.items ?? []
-  );
-  const [totalEmpleados, setTotalEmpleados] = useState(
-    () => cache.asistencia.get(getFechaLocalHoy())?.total ?? 0
-  );
-  const [cargandoDatos, setCargandoDatos] = useState(
-    () => !cache.asistencia.has(getFechaLocalHoy())
-  );
+  /* ───────── Datos reales ───────── */
+  const [todas, setTodas] = useState<StaffAttendance[]>([]);
+  const [staff, setStaff] = useState<StaffPendiente[]>([]);
+  const [cargosCatalogo, setCargosCatalogo] = useState<CatalogoItem[]>([]);
+  const [rolesCatalogo, setRolesCatalogo] = useState<CatalogoItem[]>([]);
+  const [cargando, setCargando] = useState(true);
   const [mensajeError, setMensajeError] = useState("");
-  const [resaltados, setResaltados] = useState<Set<number>>(new Set());
-  const [cargosCatalogo, setCargosCatalogo] = useState<CustomerJobPosition[]>(
-    () => cache.cargos ?? []
-  );
-  const [rolesCatalogo, setRolesCatalogo] = useState<CustomerRole[]>(() => cache.roles ?? []);
 
-  // Modal "Nuevo registro"
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [personalPendiente, setPersonalPendiente] = useState<StaffPendiente[]>([]);
-  const [cargandoPendientes, setCargandoPendientes] = useState(false);
-  const [busquedaModal, setBusquedaModal] = useState("");
-  const [filtroModal, setFiltroModal] = useState(""); // "" | "cargo:<id>" | "rol:<id>"
-  const [seleccionado, setSeleccionado] = useState<StaffPendiente | null>(null);
-  const [registrando, setRegistrando] = useState(false);
-  const [errorModal, setErrorModal] = useState("");
-  const [exitoModal, setExitoModal] = useState("");
-  const [recargaModal, setRecargaModal] = useState(0); // al cambiar, se vuelve a pedir la lista
-  const [modoModal, setModoModal] = useState<ModoRegistro>("ingreso");
-  const [descripcionAusencia, setDescripcionAusencia] = useState("");
-  // Si dos cargas se solapan (cambio rápido de fecha, eventos Realtime) solo cuenta la última.
-  const numeroUltimaPeticion = useRef(0);
-  // Huella de cada fila en la carga anterior: así se sabe cuáles cambiaron.
-  const firmasPrevias = useRef<Map<number, string>>(new Map());
-  const temporizadorResaltado = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const hoy = getFechaLocalHoy();
-
-  const actualizarFiltro: ActualizarFiltro = useCallback((clave, valor) => {
-    setFiltros((previos) => ({ ...previos, [clave]: valor }));
-  }, []);
-
-  // ─── 1. PROTEGER la ruta ───────────────────────────────────────────────────
+  // Catálogos y personal activo: una vez al montar.
   useEffect(() => {
-    if (!loadingAuth && !session) {
-      localStorage.clear();
-      navigate("/login");
-    }
-  }, [loadingAuth, session, navigate]);
-
-  // ─── 2. TRAER asistencias ──────────────────────────────────────────────────
-  const cargarAsistencia = useCallback(
-    async (fecha: string, mostrarCargando: boolean) => {
-      const numeroDePeticion = ++numeroUltimaPeticion.current;
-      if (mostrarCargando) setCargandoDatos(true);
-
-      try {
-        const respuesta = await getAttendanceByDate(fecha);
-        if (numeroDePeticion !== numeroUltimaPeticion.current) return;
-
-        // Filas nuevas o con horas distintas a la carga anterior → se resaltan unos segundos.
-        const previas = firmasPrevias.current;
-        const cambiadas = new Set<number>();
-        if (previas.size > 0) {
-          respuesta.items.forEach((fila) => {
-            if (previas.get(fila.att_id) !== firmaRegistro(fila)) cambiadas.add(fila.att_id);
-          });
-        }
-        firmasPrevias.current = new Map(respuesta.items.map((f) => [f.att_id, firmaRegistro(f)]));
-
-        if (cambiadas.size > 0) {
-          setResaltados(cambiadas);
-          if (temporizadorResaltado.current) clearTimeout(temporizadorResaltado.current);
-          temporizadorResaltado.current = setTimeout(
-            () => setResaltados(new Set()),
-            SEGUNDOS_RESALTADO * 1000
-          );
-        }
-
-        const items = guardarAsistenciaEnCache(
-          fecha,
-          conservarFotos(respuesta.items),
-          respuesta.total_staff
-        );
-        setFilas(items);
-        setTotalEmpleados(respuesta.total_staff);
-        setMensajeError("");
-      } catch (error) {
-        if (numeroDePeticion !== numeroUltimaPeticion.current) return;
-        console.error("Error al cargar asistencias:", error);
-        setMensajeError(mensajeDe(error, "No se pudo cargar la asistencia."));
-      } finally {
-        if (numeroDePeticion === numeroUltimaPeticion.current) setCargandoDatos(false);
-      }
-    },
-    []
-  );
-
-  // ─── 2 + 3. Carga al entrar / cambiar de fecha + suscripción Realtime ──────
-  useEffect(() => {
-    if (!haySesion) return;
-
-    // Si esta fecha ya está en caché se muestra al instante y se refresca en silencio;
-    // las filas que hayan cambiado mientras no se miraba se resaltan unos segundos.
-    const guardada = cache.asistencia.get(filtros.fecha);
-    firmasPrevias.current = new Map(
-      (guardada?.items ?? []).map((fila) => [fila.att_id, firmaRegistro(fila)])
-    );
-    if (guardada) {
-      setFilas(guardada.items);
-      setTotalEmpleados(guardada.total);
-      setCargandoDatos(false);
-    }
-    void cargarAsistencia(filtros.fecha, !guardada);
-
-    const canal = supabase
-      .channel("attendance-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, () => {
-        void cargarAsistencia(filtros.fecha, false); // sin parpadeo de "Cargando..."
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(canal);
-    };
-  }, [haySesion, filtros.fecha, cargarAsistencia]);
-
-  // Limpia el temporizador del resaltado al salir de la página.
-  useEffect(
-    () => () => {
-      if (temporizadorResaltado.current) clearTimeout(temporizadorResaltado.current);
-    },
-    []
-  );
-
-  // Cargos y roles (filtro de la tabla y del modal). Si fallan se usan los cargos de las filas.
-  useEffect(() => {
-    if (!haySesion) return;
     let cancelado = false;
-
-    getCustomerJobPositions()
-      .then((cargos) => {
-        cache.cargos = cargos;
-        if (!cancelado) setCargosCatalogo(cargos);
+    Promise.all([getPersonalActivo(), getCargos(), getRoles()])
+      .then(([personal, cargos, roles]) => {
+        if (cancelado) return;
+        setStaff(personal);
+        setCargosCatalogo(cargos);
+        setRolesCatalogo(roles);
       })
-      .catch((error) => console.warn("No se pudo cargar el catálogo de cargos:", error));
-
-    getCustomerRoles()
-      .then((roles) => {
-        cache.roles = roles;
-        if (!cancelado) setRolesCatalogo(roles);
-      })
-      .catch((error) => console.warn("No se pudo cargar el catálogo de roles:", error));
-
+      .catch((e) => {
+        if (!cancelado) setMensajeError(mensajeDe(e, "No se pudo cargar el personal."));
+      });
     return () => {
       cancelado = true;
     };
-  }, [haySesion]);
+  }, []);
 
-  // ─── 4. FILTRAR ────────────────────────────────────────────────────────────
-  const filasFiltradas = useMemo(() => {
-    const texto = normalizarTexto(filtros.busqueda);
+  // Asistencias: se vuelven a pedir cada vez que cambia la fecha del filtro.
+  useEffect(() => {
+    let cancelado = false;
+    setCargando(true);
+    getAsistenciasPorFecha(filtros.fecha)
+      .then((lista) => {
+        if (cancelado) return;
+        setTodas(lista);
+        setMensajeError("");
+      })
+      .catch((e) => {
+        if (cancelado) return;
+        setTodas([]);
+        setMensajeError(mensajeDe(e, "No se pudieron cargar los registros."));
+      })
+      .finally(() => {
+        if (!cancelado) setCargando(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [filtros.fecha]);
+  // Actualización automática: solo mientras se ve el día de hoy y la pestaña está visible.
+  // No muestra "cargando" y, si falla una consulta, se reintenta en el siguiente ciclo.
+  const ultimaRenovacionFotos = useRef(Date.now());
+  useEffect(() => {
+    if (filtros.fecha !== hoy) return;
 
-    return filas.filter((fila) => {
-      if (texto !== "") {
-        const campos = normalizarTexto(`${fila.stff_name} ${fila.stff_lastname} ${fila.stff_dni}`);
-        if (!campos.includes(texto)) return false;
+    let cancelado = false;
+    const refrescar = () => {
+      if (document.hidden) return;
+      getAsistenciasPorFecha(hoy)
+        .then((lista) => {
+          if (cancelado) return;
+          const renovar = Date.now() - ultimaRenovacionFotos.current > RENOVAR_FOTOS_MS;
+          if (renovar) ultimaRenovacionFotos.current = Date.now();
+          setTodas((previas) => {
+            if (renovar) return lista;
+            const fotos = new Map(previas.map((a) => [a.stff_id, a.img_url]));
+            return lista.map((a) => ({ ...a, img_url: fotos.get(a.stff_id) ?? a.img_url }));
+          });
+        })
+        .catch(() => {});
+    };
+
+    // Aviso instantáneo de la base de datos. Se espera un poco porque un registro crea
+    // varias filas a la vez y llegan varios avisos seguidos.
+    let espera: number | undefined;
+    const programarRefresco = () => {
+      window.clearTimeout(espera);
+      espera = window.setTimeout(refrescar, 600);
+    };
+    const canal = supabase
+      .channel("attendance-cambios")
+      .on("postgres_changes", { event: "*", schema: "public", table: "attendance" }, programarRefresco)
+      .subscribe();
+
+    const temporizador = window.setInterval(refrescar, INTERVALO_REFRESCO_MS);
+    document.addEventListener("visibilitychange", refrescar); // al volver a la pestaña, actualiza al instante
+    return () => {
+      cancelado = true;
+      window.clearTimeout(espera);
+      window.clearInterval(temporizador);
+      document.removeEventListener("visibilitychange", refrescar);
+      void supabase.removeChannel(canal);
+    };
+  }, [filtros.fecha, hoy]);
+  const [resaltados, setResaltados] = useState<Set<number>>(new Set());
+
+  const resaltar = (id: number) => {
+    setResaltados((p) => new Set(p).add(id));
+    window.setTimeout(() => {
+      setResaltados((p) => {
+        const n = new Set(p);
+        n.delete(id);
+        return n;
+      });
+    }, 4000);
+  };
+
+  const esHoy = filtros.fecha === hoy;
+
+  const actualizarFiltro: ActualizarFiltro = (clave, valor) =>
+    setFiltros((previos) => ({ ...previos, [clave]: valor }));
+
+  /* ───────── Filas, resumen y filtros ───────── */
+  // `todas` ya trae solo la fecha elegida (la filtra el servidor).
+  const delDia = todas;
+
+  const resumen: RegisterSummary = useMemo(
+    () => ({
+      totalEmpleados: staff.length,
+      puntuales: delDia.filter((a) => getEstado(a) === "puntual").length,
+      tardanzas: delDia.filter((a) => getEstado(a) === "tardanza").length,
+      ausencias: delDia.filter(esAusente).length,
+    }),
+    [delDia, staff]
+  );
+
+  /* Listas que muestra el modal de cada card de Seccion_2. */
+  const listas: ListasResumen = useMemo(() => {
+    const marcaron = new Set(
+      delDia.filter((a) => a.att_schedule_start).map((a) => a.stff_id)
+    );
+    return {
+      empleados: staff.map(aPersona),
+      puntuales: delDia.filter((a) => getEstado(a) === "puntual").map(aPersona),
+      tardanzaIngreso: delDia
+        .filter((a) => getEstado(a) === "tardanza")
+        .map((a) => aPersonaJustificada(a, a.att_justification_delay)),
+      tardanzaRefrigerio: delDia
+        .filter(esTardanzaRefrigerio)
+        .map((a) => aPersonaJustificada(a, a.att_justification_refreshment_delay)),
+      ausentes: staff.filter((s) => !marcaron.has(s.stff_id)).map(aPersona),
+    };
+  }, [delDia, staff]);
+
+  const filas = useMemo(() => {
+    const q = normalizar(filtros.busqueda);
+    return delDia.filter((a) => {
+      if (q) {
+        const texto = normalizar(`${a.stff_name} ${a.stff_lastname} ${a.stff_dni}`);
+        if (!texto.includes(q)) return false;
       }
-
-      if (filtros.cargo !== "" && fila.job_position_name !== filtros.cargo) return false;
-
-      const estado = getEstado(fila);
-      if (filtros.estado === "presente" && estado !== "puntual") return false;
-      if (filtros.estado === "tardanza" && estado !== "tardanza") return false;
-      if (filtros.estado === "ausente" && estado !== null) return false; // sin ingreso registrado
-
+      if (filtros.cargo && a.job_position_name !== filtros.cargo) return false;
+      if (filtros.estado === "presente" && getEstado(a) !== "puntual") return false;
+      if (filtros.estado === "tardanza" && getEstado(a) !== "tardanza") return false;
+      if (filtros.estado === "ausente" && !esAusente(a)) return false;
       return true;
     });
-  }, [filas, filtros.busqueda, filtros.cargo, filtros.estado]);
+  }, [delDia, filtros]);
 
-  const cargosDisponibles = useMemo(() => {
-    const nombres =
-      cargosCatalogo.length > 0
-        ? cargosCatalogo.map((cargo) => cargo.name)
-        : filas.map((fila) => fila.job_position_name).filter((n): n is string => !!n);
-    return [...new Set(nombres)].sort((a, b) => a.localeCompare(b, "es"));
-  }, [cargosCatalogo, filas]);
+  // Cargos del desplegable (Seccion_3 filtra por nombre).
+  const cargosDisponibles = useMemo(
+    () => cargosCatalogo.map((c) => c.name).sort((a, b) => a.localeCompare(b)),
+    [cargosCatalogo]
+  );
 
-  // ─── 5. RESUMEN (siempre sobre todas las filas de la fecha, sin filtros) ───
-  const resumen: RegisterSummary = useMemo(() => {
-    let presentes = 0;
-    let tardanzas = 0;
-
-    for (const fila of filas) {
-      const estado = getEstado(fila);
-      if (estado === "puntual") presentes++;
-      else if (estado === "tardanza") tardanzas++;
-    }
-
-    return {
-      totalEmpleados,
-      presentes,
-      tardanzas,
-      // Personal activo que todavía no registró ingreso (tenga o no fila ese día).
-      ausencias: Math.max(0, totalEmpleados - presentes - tardanzas),
-    };
-  }, [filas, totalEmpleados]);
-
+  const llaveFiltros = `${filtros.fecha}|${filtros.busqueda}|${filtros.cargo}|${filtros.estado}`;
   const hayFiltrosActivos =
     filtros.busqueda.trim() !== "" || filtros.cargo !== "" || filtros.estado !== "";
 
-  // ─── 6. REGISTRAR ingreso desde el modal "Nuevo registro" ──────────────────
-  const abrirModal = useCallback((modo: ModoRegistro) => {
-    setModoModal(modo);
-    setDescripcionAusencia("");
-    setBusquedaModal("");
-    setFiltroModal("");
-    setSeleccionado(null);
-    setErrorModal("");
-    setExitoModal("");
-    setCargandoPendientes(true);
-    setModalAbierto(true);
+  /* ───────── Cambios sobre filas (Seccion_4: solo se adaptó a estado local) ───────── */
+  const actualizarFila: ActualizarFila = useCallback((attId, parche) => {
+    setTodas((previas) => previas.map((a) => (a.att_id === attId ? { ...a, ...parche } : a)));
   }, []);
 
-  const abrirIngreso = useCallback(() => abrirModal("ingreso"), [abrirModal]);
-  const abrirAusencia = useCallback(() => abrirModal("ausencia"), [abrirModal]);
-
-  const cerrarModal = useCallback(() => {
-    setModalAbierto(false);
-    setSeleccionado(null);
-    setDescripcionAusencia("");
+  const eliminarRegistro = useCallback(async (attId: number) => {
+    await eliminarAsistencia(attId); // si falla, lanza el error y la fila NO se quita de la tabla
+    setTodas((previas) => previas.filter((a) => a.att_id !== attId));
   }, []);
 
-  // Trae el personal activo sin ingreso hoy. Espera un momento al escribir para no pedir en cada letra.
-  useEffect(() => {
-    if (!modalAbierto || !haySesion) return;
+  /* ───────── Nuevo registro / ausencia ───────── */
+  const [abierto, setAbierto] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [filtro, setFiltro] = useState("");
+  const [seleccionado, setSeleccionado] = useState<StaffPendiente | null>(null);
+  const [registrando, setRegistrando] = useState(false);
+  const [error, setError] = useState("");
+  const [exito, setExito] = useState("");
+  // Quiénes ya tienen registro HOY (se consulta al abrir el modal; no depende de la fecha del filtro).
+  const [conRegistroHoy, setConRegistroHoy] = useState<Set<number>>(new Set());
+// Personal activo CON contrato vigente en la fecha elegida (es lo que muestra el modal de registrar).
+const [elegibles, setElegibles] = useState<StaffPendiente[]>([]);
+const [cargandoPendientes, setCargandoPendientes] = useState(false);
+// Solo se usa cuando la fecha elegida NO es hoy (en hoy la hora la pone el servidor).
+const [horaIngreso, setHoraIngreso] = useState(HORA_INGRESO);
 
-    let cancelado = false;
-    const [tipo, idTexto] = filtroModal.split(":");
-    const id = Number(idTexto);
-    const obtenerPendientes = modoModal === "ausencia" ? getPendingAbsence : getPendingCheckIn;
-    const temporizador = setTimeout(
-      async () => {
-        setCargandoPendientes(true);
-        try {
-          const personal = await obtenerPendientes({
-            search: busquedaModal.trim(),
-            cargoId: tipo === "cargo" ? id : null,
-            rolId: tipo === "rol" ? id : null,
-          });
-          if (cancelado) return;
-          setPersonalPendiente(personal);
-          setErrorModal("");
-        } catch (error) {
-          if (cancelado) return;
-          console.error("Error al cargar el personal pendiente:", error);
-          setErrorModal(mensajeDe(error, "No se pudo cargar el personal."));
-        } finally {
-          if (!cancelado) setCargandoPendientes(false);
-        }
-      },
-      busquedaModal === "" ? 0 : MS_ESPERA_BUSQUEDA
-    );
+const reiniciar = () => {
+  setBusqueda("");
+  setFiltro("");
+  setSeleccionado(null);
+  setError("");
+  setExito("");
+  setHoraIngreso(HORA_INGRESO);
+};
 
-    return () => {
-      cancelado = true;
-      clearTimeout(temporizador);
-    };
-}, [modalAbierto, haySesion, modoModal, busquedaModal, filtroModal, recargaModal]);
-
-  const seleccionarPersonal = useCallback((staff: StaffPendiente) => {
-    setErrorModal("");
-    setExitoModal("");
-    setDescripcionAusencia("");
-    setSeleccionado(staff);
-  }, []);
-
-  const cancelarSeleccion = useCallback(() => {
-    setSeleccionado(null);
-    setDescripcionAusencia("");
-  }, []);
-
-  const confirmarRegistro = useCallback(async () => {
-    if (!seleccionado || registrando) return;
-    const staff = seleccionado;
-    const esAusencia = modoModal === "ausencia";
-    const descripcion = descripcionAusencia.trim();
-
-    // La ausencia exige descripción (el backend también lo valida).
-    if (esAusencia && (descripcion === "" || descripcion.length > MAX_DESCRIPCION_AUSENCIA)) return;
-
-    setRegistrando(true);
-    setErrorModal("");
-    try {
-      if (esAusencia) await registerAbsence(staff.stff_id, descripcion);
-      else await registerCheckIn(staff.stff_id);
-
-      // Ya registrado: sale de la lista del modal y se vuelve a traer la tabla
-      // (además de Realtime, por si la tabla no emite eventos para este usuario).
-      setPersonalPendiente((previos) => previos.filter((p) => p.stff_id !== staff.stff_id));
-      void cargarAsistencia(filtros.fecha, false);
-      setExitoModal(
-        esAusencia
-          ? `Ausencia de ${staff.stff_name} ${staff.stff_lastname} registrada.`
-          : `Ingreso de ${staff.stff_name} ${staff.stff_lastname} registrado.`
+const cargarPendientes = async (fecha: string) => {
+  setCargandoPendientes(true);
+  try {
+    const [registrosDelDia, personal] = await Promise.all([
+      getAsistenciasPorFecha(fecha),
+      getPersonalElegible(fecha),
+    ]);
+    // Ahora es "con registro en la fecha elegida" (el nombre del estado se quedó por no tocar más código).
+    setConRegistroHoy(
+      new Set(
+        registrosDelDia
+            .filter((a) => a.att_schedule_start || a.att_justification_absence !== null)
+            .map((a) => a.stff_id)
+        )
       );
-    } catch (error) {
-      console.error("Error al registrar:", error);
-      setErrorModal(
-        mensajeDe(error, esAusencia ? "No se pudo registrar la ausencia." : "No se pudo registrar la asistencia.")
-      );
-      setRecargaModal((n) => n + 1); // por si otro equipo ya lo registró: se refresca la lista
+      setElegibles(personal);
+    } catch (e) {
+      setError(mensajeDe(e, "No se pudo cargar el personal pendiente."));
     } finally {
+      setCargandoPendientes(false);
+    }
+  };
+
+  const abrir = () => {
+    reiniciar();
+    setAbierto(true);
+    void cargarPendientes(filtros.fecha);
+  };
+
+  const cerrar = useCallback(() => {
+    setAbierto(false);
+    setBusqueda("");
+    setFiltro("");
+    setSeleccionado(null);
+    setError("");
+    setExito("");
+    setHoraIngreso(HORA_INGRESO);
+}, []);
+
+  const onCancelarSeleccion = useCallback(() => {
+    setSeleccionado(null);
+    setError("");
+  }, []);
+
+  // Pendientes: personal activo sin registro en el día de hoy.
+  const personal = useMemo(() => {
+    const q = normalizar(busqueda);
+    const [tipo, idTexto] = filtro.split(":");
+    const idFiltro = Number(idTexto);
+
+    return elegibles.filter((s) => {
+      if (conRegistroHoy.has(s.stff_id)) return false;
+      if (q && !normalizar(`${s.stff_name} ${s.stff_lastname} ${s.stff_dni}`).includes(q)) return false;
+      if (tipo === "cargo" && s.job_position_id !== idFiltro) return false;
+      if (tipo === "rol" && s.role_id !== idFiltro) return false;
+      return true;
+    });
+  }, [elegibles, conRegistroHoy, busqueda, filtro]);
+
+const confirmar = async () => {
+  if (!seleccionado || registrando) return;
+
+  // La fecha sale del calendario, no de "hoy".
+  const fecha = filtros.fecha;
+  if (!esHoy && !/^\d{2}:\d{2}$/.test(horaIngreso)) {
+    setError("Indica la hora de ingreso.");
+    return;
+  }
+
+  setRegistrando(true);
+  setError("");
+  try {
+    const fila = await crearAsistencia({
+      staffId: seleccionado.stff_id,
+      date: fecha,
+      // Hoy: la hora la pone el servidor. Otra fecha: la hora indicada en el modal.
+      startAt: esHoy ? undefined : aIsoLocal(fecha, horaIngreso),
+    });
+
+    setConRegistroHoy((previo) => new Set(previo).add(fila.stff_id));
+    // El backend también creó las filas vacías del resto del personal: se vuelve a pedir la lista de esa fecha.
+    const lista = await getAsistenciasPorFecha(fecha).catch(() => [fila]);
+    setTodas(lista);
+    resaltar(fila.att_id);
+    // Ya no se fuerza fecha: hoy; se queda en la fecha del calendario.
+
+      const nombre = `${seleccionado.stff_name} ${seleccionado.stff_lastname}`;
+      setExito(`Asistencia de ${nombre} registrada.`);
       setSeleccionado(null);
-      setDescripcionAusencia("");
+    } catch (e) {
+      setError(mensajeDe(e, "No se pudo registrar."));
+    } finally {
       setRegistrando(false);
     }
-  }, [seleccionado, registrando, modoModal, descripcionAusencia, cargarAsistencia, filtros.fecha]);
-
-  // ─── Acciones de los modales de seccion_4 ──────────────────────────────────
-  /** Refleja en la tabla (y en la caché) un cambio ya guardado en el backend. */
-  const actualizarFila = useCallback((attId: number, parche: Partial<StaffAttendance>) => {
-    const aplicar = (items: StaffAttendance[]) =>
-      items.map((fila) => (fila.att_id === attId ? { ...fila, ...parche } : fila));
-    mapearCache(aplicar);
-    setFilas(aplicar);
-  }, []);
-
-  /** Quita la fila al instante; si el backend falla, vuelve a traer la tabla y lanza el error. */
-  const eliminarRegistro = useCallback(
-    async (attId: number) => {
-      const quitar = (items: StaffAttendance[]) => items.filter((fila) => fila.att_id !== attId);
-      mapearCache(quitar);
-      cache.detalles.delete(attId);
-      cache.incidencias.delete(attId);
-      firmasPrevias.current.delete(attId);
-      setFilas(quitar);
-
-      try {
-        await deleteAttendance(attId);
-      } catch (error) {
-        void cargarAsistencia(filtros.fecha, false); // la fila vuelve a aparecer
-        throw error;
-      }
-    },
-    [cargarAsistencia, filtros.fecha]
-  );
+  };
 
   const nuevoRegistro: NuevoRegistroControl = {
-    abierto: modalAbierto,
-        abrir: abrirIngreso,
-    abrirAusencia,
-    modo: modoModal,
-    descripcion: descripcionAusencia,
-    onCambiarDescripcion: setDescripcionAusencia,
-    maxDescripcion: MAX_DESCRIPCION_AUSENCIA,
-    cerrar: cerrarModal,
-
-    personal: personalPendiente,
+    abierto,
+    abrir,
+    cerrar,
+    fecha: filtros.fecha,
+    esHoy,
+    horaIngreso,
+    onCambiarHoraIngreso: setHoraIngreso,
+    personal,
     cargando: cargandoPendientes,
-
-    busqueda: busquedaModal,
-    onCambiarBusqueda: setBusquedaModal,
-    filtro: filtroModal,
-    onCambiarFiltro: setFiltroModal,
+    busqueda,
+    onCambiarBusqueda: setBusqueda,
+    filtro,
+    onCambiarFiltro: setFiltro,
     cargos: cargosCatalogo,
     roles: rolesCatalogo,
-
     seleccionado,
-    onSeleccionar: seleccionarPersonal,
-    onCancelarSeleccion: cancelarSeleccion,
-    onConfirmar: () => void confirmarRegistro(),
+    onSeleccionar: (s) => {
+      setSeleccionado(s);
+      setError("");
+      setExito("");
+    },
+    onCancelarSeleccion,
+    onConfirmar: () => void confirmar(),
     registrando,
-
-    error: errorModal,
-    exito: exitoModal,
+    error,
+    exito,
   };
 
   return {
     filtros,
     actualizarFiltro,
     hoy,
-    esHoy: filtros.fecha === hoy,
-    cargosDisponibles,
-
-    filas: filasFiltradas,
-    resumen,
-    resaltados,
-    hayFiltrosActivos,
-    /** Cambia cuando cambian fecha o filtros: la tabla vuelve a la página 1. */
-    llaveFiltros: `${filtros.fecha}|${filtros.busqueda}|${filtros.cargo}|${filtros.estado}`,
-
-    cargando: loadingAuth || cargandoDatos,
+    esHoy,
+    cargando,
     mensajeError,
-
+    resumen,
+    listas,
+    filas,
+    cargosDisponibles,
+    resaltados,
+    llaveFiltros,
+    hayFiltrosActivos,
     actualizarFila,
     eliminarRegistro,
-
     nuevoRegistro,
   };
 };

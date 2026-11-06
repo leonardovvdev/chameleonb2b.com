@@ -38,6 +38,9 @@ const aIso = (fecha: string, hhmm: string): string | null =>
 
 /** Mismas reglas que el backend: las horas llenas deben ir en orden. */
 const validar = (h: Horas): string => {
+  if (h.inicioJornada === "" && (h.inicioReceso !== "" || h.finReceso !== "" || h.finJornada !== "")) {
+    return "Indica el inicio de jornada antes de las demás horas.";
+  }
   if (h.finReceso !== "" && h.inicioReceso === "") return "Indica el inicio del receso antes de su fin.";
   const llenas = [h.inicioJornada, h.inicioReceso, h.finReceso, h.finJornada].filter((v) => v !== "");
   if (llenas.some((v, i) => i > 0 && v < llenas[i - 1])) {
@@ -48,10 +51,10 @@ const validar = (h: Horas): string => {
 
 const ModalEditar = ({ registro, onCancelar, onGuardado }: ModalEditarProps) => {
   const original: Horas = {
-    inicioJornada: aInput(registro.att_inicio_jornada),
-    inicioReceso: aInput(registro.att_inicio_receso),
-    finReceso: aInput(registro.att_fin_receso),
-    finJornada: aInput(registro.att_fin_jornada),
+    inicioJornada: aInput(registro.att_schedule_start),
+    inicioReceso: aInput(registro.att_refreshment_start),
+    finReceso: aInput(registro.att_refreshment_end),
+    finJornada: aInput(registro.att_schedule_end),
   };
   const [horas, setHoras] = useState<Horas>(original);
   const [guardando, setGuardando] = useState(false);
@@ -70,16 +73,16 @@ const ModalEditar = ({ registro, onCancelar, onGuardado }: ModalEditarProps) => 
     setError("");
     try {
       const guardado = await updateAttendanceTimes(registro.att_id, {
-        inicioJornada: aIso(registro.att_fecha, horas.inicioJornada),
-        inicioReceso: aIso(registro.att_fecha, horas.inicioReceso),
-        finReceso: aIso(registro.att_fecha, horas.finReceso),
-        finJornada: aIso(registro.att_fecha, horas.finJornada),
+        inicioJornada: aIso(registro.att_date, horas.inicioJornada),
+        inicioReceso: aIso(registro.att_date, horas.inicioReceso),
+        finReceso: aIso(registro.att_date, horas.finReceso),
+        finJornada: aIso(registro.att_date, horas.finJornada),
       });
       onGuardado({
-        att_inicio_jornada: guardado.att_inicio_jornada,
-        att_inicio_receso: guardado.att_inicio_receso,
-        att_fin_receso: guardado.att_fin_receso,
-        att_fin_jornada: guardado.att_fin_jornada,
+        att_schedule_start: guardado.att_schedule_start,
+        att_refreshment_start: guardado.att_refreshment_start,
+        att_refreshment_end: guardado.att_refreshment_end,
+        att_schedule_end: guardado.att_schedule_end,
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudieron guardar las horas.");

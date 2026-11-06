@@ -9,6 +9,8 @@ import {
 import style from "./seccion_3.module.css";
 import Modal, { ConfirmarTerminarContrato } from "./shared/modal";
 import ModalInformation, { type PestanaPersonal } from "./shared/modal_information";
+import ModalHorario from "./shared/modal_horario";
+import ModalContrato from "./shared/modal_contrato";
 // Modal de seccion_1: con `stffId` edita y vuelve a contratar; sin `stffId` crea.
 import ModalPersonal from "../seccion_1/shared/modal";
 
@@ -106,7 +108,7 @@ const useFilasPorPantalla = (ref: RefObject<HTMLElement | null>) => {
 /* ───────────────────────── Helpers ───────────────────────── */
 
 const hayFiltrosActivos = (f: StaffFilters) =>
-  f.busqueda.trim() !== "" ||
+  (f.busqueda ?? "").trim() !== "" ||
   f.cargoId !== null ||
   f.rolId !== null ||
   f.estado !== "";
@@ -140,6 +142,9 @@ const Seccion_3 = ({ filtros }: Seccion3Props) => {
     staff: StaffListItem;
     tab: PestanaPersonal;
   } | null>(null);
+  // Modales de "Editar horario" y "Editar contrato" (contrato actual del personal)
+  const [staffHorario, setStaffHorario] = useState<StaffListItem | null>(null);
+  const [staffContrato, setStaffContrato] = useState<StaffListItem | null>(null);
   // Confirmación de "Terminar contrato"
   const [staffTerminar, setStaffTerminar] = useState<StaffListItem | null>(null);
   const [terminando, setTerminando] = useState(false);
@@ -308,6 +313,20 @@ const Seccion_3 = ({ filtros }: Seccion3Props) => {
                                   label: "Editar",
                                   onClick: () => abrirPersonal(staff, "editar"),
                                 },
+                                {
+                                  label: "Editar horario",
+                                  onClick: () => {
+                                    setMenuAbierto(null);
+                                    setStaffHorario(staff);
+                                  },
+                                },
+                                {
+                                  label: "Editar contrato",
+                                  onClick: () => {
+                                    setMenuAbierto(null);
+                                    setStaffContrato(staff);
+                                  },
+                                },
                                 staff.stff_active
                                   ? {
                                       label: "Terminar contrato",
@@ -394,6 +413,22 @@ const Seccion_3 = ({ filtros }: Seccion3Props) => {
             // 2) En segundo plano se confirma con el servidor (filtros, orden, conteo).
             void recargar();
           }}
+        />
+      )}
+
+      {staffHorario && (
+        <ModalHorario
+          key={staffHorario.stff_id}
+          staff={staffHorario}
+          onClose={() => setStaffHorario(null)}
+        />
+      )}
+
+      {staffContrato && (
+        <ModalContrato
+          key={staffContrato.stff_id}
+          staff={staffContrato}
+          onClose={() => setStaffContrato(null)}
         />
       )}
 

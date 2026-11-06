@@ -1,7 +1,5 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import style from "./modal.module.css";
-import { getAfps } from "../../../../../core/services";
-import { Select, type Opcion } from "./parte1";
 
 /* ───────────── Paso 4: Honorarios ───────────── */
 export type TipoPago = "monthly" | "weekly" | "daily";
@@ -28,8 +26,6 @@ export interface HonorariosState {
   descuentaAusencia: boolean; // si no viene a trabajar
   descuentaTardanza: boolean; // si viene tarde
   descuentaDemora: boolean; // si se demora en su refrigerio
-  descuentaAfp: boolean;
-  afpId: string; // "" = sin elegir
 }
 
 export const HONORARIOS_INICIAL: HonorariosState = {
@@ -40,8 +36,6 @@ export const HONORARIOS_INICIAL: HonorariosState = {
   descuentaAusencia: true, // igual que el DEFAULT TRUE de staff_contracts
   descuentaTardanza: true,
   descuentaDemora: true,
-  descuentaAfp: false,
-  afpId: "",
   // Valores del sistema (no editables)
   general: { falta: "50", tardanza: "5", demora: "5" },
   personalizado: {
@@ -80,7 +74,6 @@ export const validarPaso4 = (h: HonorariosState): Record<string, string> => {
   } else if (!(Number(h.sueldo) > 0)) {
     errores.sueldo = "Ingresa un monto válido.";
   }
-  if (h.descuentaAfp && h.afpId === "") errores.afp = "Elige la AFP.";
   return errores;
 };
 
@@ -94,29 +87,6 @@ interface Parte4Props {
 
 const Parte4 = ({ uid, honorarios, errores, onHonorarios }: Parte4Props) => {
   const etiquetaSueldo = TIPOS_PAGO.find((t) => t.value === honorarios.tipoPago)?.sueldo ?? "Sueldo";
-
-  const [afps, setAfps] = useState<Opcion[]>([]);
-  const [cargandoAfps, setCargandoAfps] = useState(true);
-  const [errorAfps, setErrorAfps] = useState("");
-
-  useEffect(() => {
-    let cancelado = false;
-    getAfps()
-      .then((items) => {
-        if (!cancelado) setAfps(items.map((a) => ({ value: String(a.id), label: a.name })));
-      })
-      .catch((err) => {
-        if (cancelado) return;
-        console.error("Error al cargar las AFP:", err);
-        setErrorAfps("No se pudieron cargar las AFP.");
-      })
-      .finally(() => {
-        if (!cancelado) setCargandoAfps(false);
-      });
-    return () => {
-      cancelado = true;
-    };
-  }, []);
 
   return (
     <div>
@@ -171,7 +141,8 @@ const Parte4 = ({ uid, honorarios, errores, onHonorarios }: Parte4Props) => {
           </div>
         </div>
       </div>
-      {/* ── Fila nueva: Descuentos ── */}
+
+      {/* ── Fila: Descuentos ── */}
       <section style={{ marginTop: 24 }}>
         <h4 className={style.seccion}>Descuentos</h4>
 
@@ -189,45 +160,6 @@ const Parte4 = ({ uid, honorarios, errores, onHonorarios }: Parte4Props) => {
               {d.label} <span style={{ opacity: 0.65 }}>({d.ayuda})</span>
             </label>
           ))}
-        </div>
-
-        <div style={{ marginTop: 16 }}>
-          <label className={style.checkAcceso}>
-            <input
-              type="checkbox"
-              className={style.checkbox}
-              checked={honorarios.descuentaAfp}
-              onChange={(e) =>
-                onHonorarios({
-                  descuentaAfp: e.target.checked,
-                  afpId: e.target.checked ? honorarios.afpId : "",
-                })
-              }
-            />
-            Descuento de AFP
-          </label>
-
-          {honorarios.descuentaAfp && (
-            <div className={style.campo} style={{ marginTop: 12, maxWidth: 320 }}>
-              <label className={style.etiqueta} htmlFor={`${uid}-afp`}>
-                AFP <span className={style.requerido}>*</span>
-              </label>
-              <Select
-                id={`${uid}-afp`}
-                value={honorarios.afpId}
-                opciones={afps}
-                placeholder={cargandoAfps ? "Cargando AFP..." : "Selecciona la AFP"}
-                onChange={(v) => onHonorarios({ afpId: v })}
-                disabled={cargandoAfps}
-                invalido={!!errores.afp}
-              />
-              {(errores.afp || errorAfps) && (
-                <p className={style.errorCampo} role="alert">
-                  {errores.afp || errorAfps}
-                </p>
-              )}
-            </div>
-          )}
         </div>
       </section>
     </div>

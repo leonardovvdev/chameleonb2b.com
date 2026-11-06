@@ -15,6 +15,7 @@ export default function RegisterPage() {
 
       <Seccion_2
         resumen={register.resumen}
+        listas={register.listas}
         esHoy={register.esHoy}
         cargando={register.cargando}
       />
@@ -26,7 +27,6 @@ export default function RegisterPage() {
         hoy={register.hoy}
         esHoy={register.esHoy}
         onNuevoRegistro={register.nuevoRegistro.abrir}
-        onRegistrarAusencia={register.nuevoRegistro.abrirAusencia}
       />
       
       <Seccion_4

@@ -1,0 +1,328 @@
+/* ───────── Fondo ───────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  font-family: "Inter", sans-serif;
+  animation: fundoEntra 0.18s ease-out;
+}
+
+/* ───────── Ventana ───────── */
+.modal {
+  --acento-fondo: #e8eefd;
+  --acento-color: #3b82f6;
+  --item-rgb: 131, 176, 235; 
+
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 440px;
+  max-height: min(640px, 85vh);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  overflow: hidden;
+  animation: modalEntra 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+
+/* Colores por card (los mismos de seccion_2) */
+.azul    { --acento-fondo: #e8eefd; --acento-color: #3b82f6; --item-rgb: 131, 176, 235; }
+.verde   { --acento-fondo: #dcfce7; --acento-color: #15803d; --item-rgb: 142, 207, 150; }
+.naranja { --acento-fondo: #ffedd5; --acento-color: #f97316; --item-rgb: 230, 140, 105; }
+.rojo    { --acento-fondo: #ffe4e6; --acento-color: #e11d48; --item-rgb: 233, 100, 100; }
+/* ───────── Cabecera ───────── */
+.header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e6eaf2;
+}
+
+.iconoCaja {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--acento-fondo);
+  color: var(--acento-color);
+}
+
+.iconoCaja svg {
+  width: 22px;
+  height: 22px;
+}
+
+.headerTextos {
+  flex: 1;
+  min-width: 0;
+}
+
+.titulo {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111a3e;
+}
+
+.subtitulo {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+.cerrar {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  line-height: 1;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cerrar:hover {
+  background: #f1f5f9;
+  color: #111a3e;
+}
+
+/* ───────── Cuerpo ───────── */
+.cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.seccionTitulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.contador {
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--acento-color);
+  background: var(--acento-fondo);
+  border-radius: 999px;
+}
+
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vacio {
+  margin: 0;
+  padding: 20px 12px;
+  font-size: 13px;
+  color: #64748b;
+  text-align: center;
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+/* ───────── Persona ───────── */
+/* ───────── Persona ───────── */
+.item {
+  display: block;
+  border-radius: 10px;
+  /* arriba blanco, abajo el color de la variante */
+  background: linear-gradient(
+    to bottom,
+    #fff 0%,
+    rgba(var(--item-rgb), 0.05) 100%
+  );
+  box-shadow: 0 1px 3px rgba(var(--item-rgb), 0.35);
+}
+
+.item:hover {
+  background: linear-gradient(
+    to bottom,
+    #fff 0%,
+    rgba(var(--item-rgb), 0.5) 100%
+  );
+}
+
+/* Fila visible (foto, nombre y badge) */
+.itemFila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.justificable .itemFila {
+  cursor: pointer;
+}
+
+.justificable .itemFila:focus-visible {
+  outline: 2px solid var(--acento-color);
+  outline-offset: -2px;
+}
+
+/* Badge "Justificado" a la derecha */
+.badgeJustificado {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--acento-color);
+  background: var(--acento-fondo);
+  border-radius: 999px;
+}
+
+.flecha {
+  width: 12px;
+  height: 12px;
+  transition: transform 0.25s ease;
+}
+
+.abierto .flecha {
+  transform: rotate(180deg);
+}
+
+/* Zona que se despliega hacia abajo */
+.detalle {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.abierto .detalle {
+  grid-template-rows: 1fr;
+}
+
+.detalleInterno {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.justificacion {
+  display: block;
+  box-sizing: border-box;
+  width: calc(100% - 24px);
+  margin: 0 12px 12px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: #111a3e;
+  background: #fff;
+  border: 1px solid rgba(var(--item-rgb), 0.6);
+  border-radius: 8px;
+  resize: none;
+  cursor: default;
+}
+
+.justificacion:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detalle,
+  .flecha {
+    transition: none;
+  }
+}
+
+.foto,
+.fotoVacia {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.foto {
+  object-fit: cover;
+  display: block;
+}
+
+.fotoVacia {
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #3b5bdb;
+  background: #e8eefd;
+  user-select: none;
+}
+
+.nombreCompleto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.nombre,
+.apellido {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nombre {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111a3e;
+}
+
+.apellido {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* ───────── Animaciones ───────── */
+@keyframes fundoEntra {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes modalEntra {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .modal {
+    animation: none;
+  }
+}

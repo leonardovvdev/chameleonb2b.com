@@ -122,7 +122,6 @@ const armarPayload = (
     delay: honorarios.descuentaTardanza,
     refreshmentDelay: honorarios.descuentaDemora,
   },
-  afpId: honorarios.descuentaAfp ? Number(honorarios.afpId) : null,
 });
 /* ───────────── Edición: del detalle del backend a los estados de los pasos ─────────────
    Es lo inverso de armarPayload: el backend devuelve la misma forma que recibe. */
@@ -193,8 +192,6 @@ const estadosDesdeDetalle = (d: StaffDetail) => {
     descuentaAusencia: d.discountFlags.absence,
     descuentaTardanza: d.discountFlags.delay,
     descuentaDemora: d.discountFlags.refreshmentDelay,
-    descuentaAfp: d.afpId !== null,
-    afpId: d.afpId !== null ? String(d.afpId) : "",
     // Sin descuento propio => aplica el general del sistema
     // Sin descuento propio => aplica el general del sistema
     generalActivo: descuento === null,
@@ -373,7 +370,7 @@ const Modal = ({ stffId, onClose, onGuardado }: ModalProps) => {
 
   const cambiarHonorarios = (cambios: Partial<HonorariosState>) => {
     setHonorarios((prev) => ({ ...prev, ...cambios }));
-    limpiarErroresPaso(["sueldo", "falta", "tardanza", "demora", "afp"]);
+    limpiarErroresPaso(["sueldo", "falta", "tardanza", "demora"]);
   };
 
   /* ── Navegación entre pasos ── */

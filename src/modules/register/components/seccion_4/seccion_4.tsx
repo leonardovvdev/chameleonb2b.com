@@ -11,85 +11,81 @@ import {
   minutosLaborados,
   minutosReceso,
 } from "../../controllers/register.controller";
+import { icon } from "../../../../core/icons";
 
 const ALTO_FILA = 65; // 40px foto + 12px*2 padding + 1px borde (igual que el CSS)
 const ALTO_HEADER = 48; // fallback si no se puede medir el <thead>
 
-/* ───────── Iconos ───────── */
-const IconoReloj = () => (
-  <svg
-    className={style.iconoHora}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <circle cx="12" cy="12" r="9" />
-    <path d="M12 7v5h4" />
-  </svg>
-);
+const BADGE_ESTADO = {
+  puntual: { clase: style.badgePuntual, texto: "Puntual" },
+  tardanza: { clase: style.badgeTardanza, texto: "Tardanza" },
+  ausente: { clase: style.badgeAusente, texto: "Ausente" },
+} as const;
 
-const IconoCafe = () => (
-  <svg
-    className={style.iconoHora}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M5 9h11v5a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V9z" />
-    <path d="M16 11h1.5a2.5 2.5 0 0 1 0 5H16" />
-    <path d="M8 3v2M12 3v2" />
-  </svg>
-);
+const iniciales = (nombre?: string, apellido?: string) =>
+  `${nombre?.trim()[0] ?? ""}${apellido?.trim()[0] ?? ""}`.toUpperCase();
+
+/** Devuelve los números de página a mostrar, con "…" para los saltos. */
+const paginasVisibles = (actual: number, total: number): (number | "…")[] => {
+  if (total <= 7) return Array.from({ length: total }, (_, n) => n + 1);
+
+  const paginas: (number | "…")[] = [1];
+  const desde = Math.max(2, actual - 1);
+  const hasta = Math.min(total - 1, actual + 1);
+
+  if (desde > 2) paginas.push("…");
+  for (let n = desde; n <= hasta; n++) paginas.push(n);
+  if (hasta < total - 1) paginas.push("…");
+  paginas.push(total);
+
+  return paginas;
+};
 
 const IconoPuntos = () => (
-  <svg className={style.iconoPuntos} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <circle cx="12" cy="5" r="1.8" />
-    <circle cx="12" cy="12" r="1.8" />
-    <circle cx="12" cy="19" r="1.8" />
+  <svg
+    className={style.iconoPuntos}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden="true"
+  >
+    <circle cx="5" cy="12" r="2" />
+    <circle cx="12" cy="12" r="2" />
+    <circle cx="19" cy="12" r="2" />
   </svg>
 );
 
-const IconoFlecha = ({ derecha }: { derecha?: boolean }) => (
+const IconoFlecha = ({ derecha = false }: { derecha?: boolean }) => (
   <svg
     className={style.iconoFlecha}
     viewBox="0 0 24 24"
     fill="none"
     stroke="currentColor"
-    strokeWidth="2"
+    strokeWidth="2.5"
     strokeLinecap="round"
     strokeLinejoin="round"
     aria-hidden="true"
+    style={derecha ? { transform: "rotate(180deg)" } : undefined}
   >
-    <path d={derecha ? "M9 6l6 6-6 6" : "M15 6l-6 6 6 6"} />
+    <polyline points="15 18 9 12 15 6" />
   </svg>
 );
-
-type Tono = "ok" | "tarde" | "neutro";
 
 const Hora = ({
   valor,
   icono,
-  tono = "neutro",
 }: {
   valor: string | null;
   icono: "reloj" | "cafe";
-  tono?: Tono;
 }) => {
   const texto = formatHora(valor);
   if (!texto) return null;
-  const clase =
-    tono === "ok" ? style.horaOk : tono === "tarde" ? style.horaTarde : style.horaNeutra;
   return (
-    <span className={`${style.hora} ${clase}`}>
-      {icono === "reloj" ? <IconoReloj /> : <IconoCafe />}
+    <span className={style.hora}>
+      {icono === "reloj" ? (
+        <icon.iconClock className={style.icon} />
+      ) : (
+        <icon.iconCoffee className={style.icon} />
+      )}
       {texto}
     </span>
   );
@@ -172,11 +168,12 @@ const Seccion_4 = ({
   }, []);
 
   // IMPORTANTE: este hook va ANTES del return condicional de abajo.
+  // No agregues hooks debajo del `if (cargando)`.
   useLayoutEffect(() => {
     recalcular();
     window.addEventListener("resize", recalcular);
     return () => window.removeEventListener("resize", recalcular);
-  }, [recalcular, cargando, hayRegistros]);
+  }, [recalcular, cargando, hayRegistros, errorEliminar]);
 
   if (cargando) {
     return (
@@ -204,32 +201,19 @@ const Seccion_4 = ({
     <div className={style.seccion} ref={seccionRef}>
       <div className={style.tarjeta}>
         {errorEliminar && (
-          <div
-            role="alert"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-              margin: "0 0 8px",
-              padding: "8px 12px",
-              borderRadius: 8,
-              background: "#fef3f2",
-              color: "#b42318",
-              fontSize: 13,
-            }}
-          >
+          <div role="alert" className={style.avisoError}>
             <span>{errorEliminar}</span>
             <button
               type="button"
               aria-label="Cerrar aviso"
               onClick={() => setErrorEliminar("")}
-              style={{ background: "none", border: 0, color: "inherit", cursor: "pointer", fontSize: 18 }}
+              className={style.avisoErrorCerrar}
             >
               ×
             </button>
           </div>
         )}
+
         {!hayRegistros ? (
           <p className={style.mensaje}>{mensajeVacio}</p>
         ) : (
@@ -271,8 +255,8 @@ const Seccion_4 = ({
                   const laborados = minutosLaborados(a);
                   const receso = minutosReceso(a);
                   const incidentes = getIncidentes(a);
-                  const hayIngreso = a.att_inicio_jornada || a.att_fin_receso;
-                  const haySalida = a.att_inicio_receso || a.att_fin_jornada;
+                  const hayIngreso = a.att_schedule_start || a.att_refreshment_end;
+                  const haySalida = a.att_refreshment_start || a.att_schedule_end;
 
                   return (
                     <tr
@@ -287,7 +271,9 @@ const Seccion_4 = ({
                           {urlImagen ? (
                             <img src={urlImagen} alt={nombre} className={style.foto} />
                           ) : (
-                            <div className={style.fotoVacia} />
+                            <div className={style.fotoVacia} aria-hidden="true">
+                              {iniciales(nombre, apellido)}
+                            </div>
                           )}
                           <div className={style.empleadoTexto}>
                             <span className={style.nombre} title={nombre}>{nombre}</span>
@@ -307,12 +293,8 @@ const Seccion_4 = ({
                       <td>
                         {hayIngreso ? (
                           <div className={style.horas}>
-                            <Hora
-                              valor={a.att_inicio_jornada}
-                              icono="reloj"
-                              tono={estado === "tardanza" ? "tarde" : "ok"}
-                            />
-                            <Hora valor={a.att_fin_receso} icono="cafe" />
+                            <Hora valor={a.att_schedule_start} icono="reloj" />
+                            <Hora valor={a.att_refreshment_end} icono="cafe" />
                           </div>
                         ) : (
                           <span className={style.vacio}>—</span>
@@ -322,8 +304,8 @@ const Seccion_4 = ({
                       <td>
                         {haySalida ? (
                           <div className={style.horas}>
-                            <Hora valor={a.att_inicio_receso} icono="cafe" />
-                            <Hora valor={a.att_fin_jornada} icono="reloj" tono="ok" />
+                            <Hora valor={a.att_refreshment_start} icono="cafe" />
+                            <Hora valor={a.att_schedule_end} icono="reloj" />
                           </div>
                         ) : (
                           <span className={style.vacio}>—</span>
@@ -347,18 +329,10 @@ const Seccion_4 = ({
                       </td>
 
                       <td className={style.colEstado}>
-                        {estado ? (
-                          <span
-                            className={`${style.badge} ${
-                              estado === "puntual" ? style.badgePuntual : style.badgeTardanza
-                            }`}
-                          >
-                            <span className={style.badgePunto} />
-                            {estado === "puntual" ? "Puntual" : "Tardanza"}
-                          </span>
-                        ) : (
-                          <span className={style.vacio}>—</span>
-                        )}
+                        <span className={`${style.badge} ${BADGE_ESTADO[estado].clase}`}>
+                          <span className={style.badgePunto} />
+                          {BADGE_ESTADO[estado].texto}
+                        </span>
                       </td>
 
                       <td className={style.colIncidencias}>
@@ -394,8 +368,6 @@ const Seccion_4 = ({
 
         {hayRegistros && (
           <div className={style.pie}>
-            <div className={style.pieIzq}></div>
-
             <div className={style.paginacion}>
               <button
                 type="button"
@@ -406,16 +378,24 @@ const Seccion_4 = ({
               >
                 <IconoFlecha />
               </button>
-              {Array.from({ length: totalPaginas }, (_, n) => n + 1).map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  className={`${style.pagBtn} ${n === paginaActual ? style.pagActiva : ""}`}
-                  onClick={() => setPagina(n)}
-                >
-                  {n}
-                </button>
-              ))}
+
+              {paginasVisibles(paginaActual, totalPaginas).map((n, idx) =>
+                n === "…" ? (
+                  <span key={`puntos-${idx}`} className={style.pagPuntos} aria-hidden="true">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={n}
+                    type="button"
+                    className={`${style.pagBtn} ${n === paginaActual ? style.pagActiva : ""}`}
+                    onClick={() => setPagina(n)}
+                  >
+                    {n}
+                  </button>
+                )
+              )}
+
               <button
                 type="button"
                 className={style.pagBtn}

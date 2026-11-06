@@ -16,10 +16,9 @@ interface Seccion3Props {
   esHoy: boolean;
   /** Pendiente: sin esta función el botón queda deshabilitado. */
   onNuevoRegistro?: () => void;
-  onRegistrarAusencia?: () => void;
 }
 
-const Seccion_3 = ({ filtros, onCambiarFiltro, cargos, hoy, esHoy, onNuevoRegistro, onRegistrarAusencia }: Seccion3Props) => {
+const Seccion_3 = ({ filtros, onCambiarFiltro, cargos, hoy, esHoy, onNuevoRegistro }: Seccion3Props) => {
   const inputFechaRef = useRef<HTMLInputElement>(null);
 
   // El <input type="date"> va oculto: la caja de fecha lo abre con showPicker().
@@ -139,15 +138,6 @@ const Seccion_3 = ({ filtros, onCambiarFiltro, cargos, hoy, esHoy, onNuevoRegist
         >
           <icon.iconPlus className={style.iconPlus} />
           Registrar Jornada
-        </button>
-        <button
-          type="button"
-          className={`${style.boton} ${style.botonSecundario}`}
-          onClick={onRegistrarAusencia}
-          disabled={!onRegistrarAusencia}
-        >
-          <icon.iconPlus className={style.iconPlusSecundario} />
-          Registrar Ausencia
         </button>
       </div>
     </div>

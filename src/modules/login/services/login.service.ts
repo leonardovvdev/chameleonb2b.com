@@ -1,4 +1,3 @@
-import { FunctionsHttpError } from "@supabase/supabase-js"; // errores de las Edge Functions
 import { supabase } from "../../../lib/supabase"; // cliente de Supabase
 
 export const ERROR_GENERICO = "No se pudo completar el inicio de sesión.";
@@ -8,18 +7,28 @@ export const ERROR_GENERICO = "No se pudo completar el inicio de sesión.";
 /** Código que manda el backend cuando el usuario de Google no tiene cuenta. */
 export const CODIGO_CUSTOMER_NO_EXISTE = "CUSTOMER_NOT_FOUND";
 
-/** Saca { error, code } que devuelve nuestro backend (el body solo se puede leer una vez). */
+/**
+ * Saca { error, code } que devuelve nuestro backend (el body solo se puede leer una vez).
+ * supabase-js deja la respuesta HTTP en `error.context`. Se comprueba así (y no con
+ * `instanceof FunctionsHttpError`) porque esa comprobación puede fallar según cómo se
+ * empaquete la librería, y entonces se perdería el código (ej. CUSTOMER_NOT_FOUND).
+ */
 export async function leerErrorBackend(
   error: unknown,
 ): Promise<{ mensaje: string; codigo: string | null }> {
-  if (error instanceof FunctionsHttpError) {
-    const body = await error.context.json().catch(() => null);
+  const context = (error as { context?: unknown } | null)?.context;
+
+  if (context instanceof Response) {
+    const body = await context.clone().json().catch(() => null);
     const mensaje = body?.error ?? body?.message;
     return {
       mensaje: typeof mensaje === "string" ? mensaje : ERROR_GENERICO,
       codigo: typeof body?.code === "string" ? body.code : null,
     };
   }
+
+  // Sin respuesta del backend: red caída, CORS bloqueado o la función no arrancó.
+  console.error("El backend no respondió (red, CORS o función caída):", error);
   return { mensaje: ERROR_GENERICO, codigo: null };
 }
 
@@ -88,3 +97,88 @@ export const loginEnBackendGoogle = () =>
 /** Google: crea el cliente si no existe (se puede repetir sin duplicar). */
 export const registrarConGoogle = () =>
   supabase.functions.invoke(`${BACKEND}/auth/google/register`, { method: "POST", body: {} });
+
+// ─────────────── Google sin redirección (Google Identity Services) ───────────────
+
+/** Verifica con el backend si la cuenta de Google ya tiene customer. NO crea nada en Supabase. */
+export const verificarCuentaGoogle = (credential: string) =>
+  supabase.functions.invoke<{ exists: boolean; email: string }>(`${BACKEND}/auth/google/check`, {
+    method: "POST",
+    body: { credential },
+  });
+
+/** Entrega el token de Google a Supabase Auth: crea/recupera el usuario y guarda la sesión (JWT). */
+export const entrarConCredencialGoogle = (credential: string) =>
+  supabase.auth.signInWithIdToken({ provider: "google", token: credential });
+
+// Tipos mínimos de la librería de Google (solo lo que usamos).
+interface GoogleIdApi {
+  initialize: (config: {
+    client_id: string;
+    callback: (respuesta: { credential?: string }) => void;
+    ux_mode?: "popup";
+    use_fedcm_for_prompt?: boolean;
+  }) => void;
+  renderButton: (contenedor: HTMLElement, opciones: Record<string, unknown>) => void;
+}
+declare global {
+  interface Window {
+    google?: { accounts: { id: GoogleIdApi } };
+  }
+}
+
+const GOOGLE_SCRIPT = "https://accounts.google.com/gsi/client";
+let cargaGoogle: Promise<void> | null = null;
+
+/** Carga el script de Google una sola vez. */
+function cargarScriptGoogle(): Promise<void> {
+  if (window.google?.accounts?.id) return Promise.resolve();
+  if (cargaGoogle) return cargaGoogle;
+
+  cargaGoogle = new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = GOOGLE_SCRIPT;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => resolve();
+    script.onerror = () => {
+      cargaGoogle = null; // permite reintentar
+      script.remove();
+      reject(new Error("No se pudo cargar el script de Google."));
+    };
+    document.head.appendChild(script);
+  });
+  return cargaGoogle;
+}
+
+/** Dibuja el botón oficial de Google dentro de `contenedor`. Al elegir cuenta llama a `alRecibir(credential)`. */
+export async function dibujarBotonGoogle(
+  contenedor: HTMLElement,
+  texto: "signin_with" | "signup_with",
+  alRecibir: (credential: string) => void,
+): Promise<void> {
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+  if (!clientId) throw new Error("Falta VITE_GOOGLE_CLIENT_ID en el .env del frontend.");
+
+  await cargarScriptGoogle();
+  const google = window.google?.accounts?.id;
+  if (!google) throw new Error("Google no está disponible.");
+
+  google.initialize({
+    client_id: clientId,
+    callback: (respuesta) => {
+      if (respuesta.credential) alRecibir(respuesta.credential);
+    },
+  });
+
+  contenedor.innerHTML = "";
+  google.renderButton(contenedor, {
+    type: "standard",
+    theme: "outline",
+    size: "large",
+    text: texto,
+    shape: "rectangular",
+    logo_alignment: "left",
+    width: Math.min(Math.max(contenedor.clientWidth, 200), 400),
+  });
+}

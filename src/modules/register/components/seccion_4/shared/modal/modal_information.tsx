@@ -49,13 +49,7 @@ const ModalInformation = ({ registro, detalle, cargando, error }: ModalInformati
         </p>
       )}
 
-      <div className={style.total}>
-        <span className={style.totalNumero}>{detalle ? detalle.total_records : "—"}</span>
-        <span className={style.totalTexto}>
-          registros de asistencia en total
-          <small>Suma de todas las fechas en la tabla attendance</small>
-        </span>
-      </div>
+      
     </div>
   );
 };

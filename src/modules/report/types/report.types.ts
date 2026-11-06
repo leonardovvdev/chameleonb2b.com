@@ -12,6 +12,13 @@ export interface ReportSchedule {
   nonWorkingDays: { type: "fixed"; days: boolean[] } | { type: "flexible"; numberDays: number } | null;
 }
 
+/** Un tramo del historial de horarios del contrato (fechas YYYY-MM-DD; end null = sigue vigente). */
+export interface ReportSchedulePeriod {
+  start: string;
+  end: string | null;
+  schedule: ReportSchedule;
+}
+
 export interface ReportIncident {
   amount: number;
   description: string;
@@ -20,6 +27,8 @@ export interface ReportIncident {
 export interface ReportRow {
   att_id: number | null;
   date: string;
+  /** Posición en AttendanceReport.schedules del horario que rigió este día (null = sin horario). */
+  schedule_index: number | null;
   arrival: string | null;
   refreshment_start: string | null;
   refreshment_end: string | null;
@@ -45,8 +54,20 @@ export interface AttendanceReport {
     end_date: string | null;
     range_start: string | null;
     range_end: string | null;
+    /** Sueldo mensual del contrato. */
+    salary_amount: number;
+    /** AFP y prima de seguro: porcentajes (0 a 100) sobre el sueldo. */
+    afp_discount: number;
+    insurance_premium: number;
+    /** Si es true, el contrato descuenta faltas / tardanzas de ingreso / demoras de refrigerio. */
+    discount_absence: boolean;
+    discount_delay: boolean;
+    discount_refreshment_delay: boolean;
   };
+  /** Horario vigente hoy (el último del historial). */
   schedule: ReportSchedule | null;
+  /** Historial completo de horarios, del más antiguo al más reciente. */
+  schedules: ReportSchedulePeriod[];
   rows: ReportRow[];
 }
 
@@ -68,7 +89,16 @@ export interface ContractOption {
   end_date: string | null;
   status: "activo" | "inactivo";
 }
+/** Una línea del cuadro de resumen de pago del mes (amount: positivo suma, negativo descuenta). */
+export interface ReportSummaryLine {
+  label: string;
+  detail: string;
+  amount: number;
+  kind: "base" | "discount" | "total";
+}
 
+/**
+ * Una hoja del reporte.
 /**
  * Una hoja del reporte. La vista previa (Sección 2) y el Excel (Sección 1)
  * se dibujan SOLO a partir de este objeto: es la única fuente de datos visual.
@@ -83,4 +113,6 @@ export interface ReportSheet {
   scheduleLine: string;
   header: string[];
   rows: string[][];
+  /** Cuadro de resumen de pago de ESTE mes (va al final de la hoja del Excel). */
+  summary: ReportSummaryLine[];
 }

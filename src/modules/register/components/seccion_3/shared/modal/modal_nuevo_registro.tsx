@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import style from "./modal_nuevo_registro.module.css";
-import { formatHora, getFechaLocalHoy, textoFecha } from "../../../../controllers/register.controller";
+import { formatHora, textoFecha } from "../../../../controllers/register.controller";
 import type { NuevoRegistroControl, StaffPendiente } from "../../../../types/register.types";
 
 /* ───────── Iconos (SVG propios) ───────── */
@@ -122,8 +122,11 @@ interface ModalNuevoRegistroProps {
 
 const ModalNuevoRegistro = ({ control }: ModalNuevoRegistroProps) => {
   const {
+    fecha,
+    esHoy,
+    horaIngreso,
+    onCambiarHoraIngreso,
     cerrar,
-    modo,
     personal,
     cargando,
     busqueda,
@@ -137,18 +140,13 @@ const ModalNuevoRegistro = ({ control }: ModalNuevoRegistroProps) => {
     onCancelarSeleccion,
     onConfirmar,
     registrando,
-    descripcion,
-    onCambiarDescripcion,
-    maxDescripcion,
     error,
     exito,
   } = control;
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const esAusencia = modo === "ausencia";
   const enDetalle = seleccionado !== null;
-  const descripcionVacia = descripcion.trim() === "";
-  const horaActual = useHoraActual(enDetalle && !esAusencia);
+  const horaActual = useHoraActual(enDetalle && esHoy);
 
   // El cursor queda en el buscador al abrir y cada vez que se vuelve a la lista.
   useEffect(() => {
@@ -170,27 +168,17 @@ const ModalNuevoRegistro = ({ control }: ModalNuevoRegistroProps) => {
   }, [enDetalle, registrando, onCancelarSeleccion, cerrar]);
 
   const hayBusqueda = busqueda.trim() !== "" || filtro !== "";
+  const textoDia = esHoy ? "hoy" : `el ${textoFecha(fecha, false)}`;
+
   const mensajeVacio = hayBusqueda
     ? "No se encontró personal con los filtros aplicados."
-    : esAusencia
-      ? "Todo el personal activo ya tiene un registro hoy."
-      : "Todo el personal activo ya registró su ingreso hoy.";
+    : `Todo el personal activo ya registró su ingreso ${textoDia}.`;
 
-  const titulo = enDetalle
-    ? esAusencia
-      ? "Registrar ausencia"
-      : "Registrar asistencia"
-    : esAusencia
-      ? "Registrar ausencia"
-      : "Nuevo registro";
+  const titulo = enDetalle ? "Registrar asistencia" : "Nuevo registro";
 
   const subtitulo = enDetalle
     ? "Revisa los datos antes de confirmar."
-    : esAusencia
-      ? "Selecciona al colaborador que no asistió hoy."
-      : "Selecciona al colaborador que registrará su ingreso de hoy.";
-
-  const hoy = getFechaLocalHoy();
+    : `Selecciona al colaborador que registrará su ingreso ${textoDia}.`;
 
   return (
     <div className={style.overlay} onClick={registrando ? undefined : cerrar}>
@@ -336,9 +324,7 @@ const ModalNuevoRegistro = ({ control }: ModalNuevoRegistroProps) => {
                 <div className={style.perfil}>
                   <Foto staff={seleccionado} grande />
                   <div className={style.perfilTexto}>
-                    <span className={`${style.etiqueta} ${esAusencia ? style.etiquetaAusencia : style.etiquetaIngreso}`}>
-                      {esAusencia ? "Ausencia" : "Ingreso"}
-                    </span>
+                    <span className={`${style.etiqueta} ${style.etiquetaIngreso}`}>Ingreso</span>
                     <h4 className={style.perfilNombre}>
                       {seleccionado.stff_name} {seleccionado.stff_lastname}
                     </h4>
@@ -362,48 +348,34 @@ const ModalNuevoRegistro = ({ control }: ModalNuevoRegistroProps) => {
                       <IconoCalendario />
                       Fecha
                     </dt>
-                    <dd className={style.datoValor}>{textoFecha(hoy, true)}</dd>
-                  </div>
-                  {!esAusencia && (
-                    <div className={style.dato}>
-                      <dt className={style.datoTitulo}>
-                        <IconoReloj />
-                        Hora de ingreso
-                      </dt>
-                      <dd className={style.datoValor}>{horaActual}</dd>
-                    </div>
-                  )}
+                <dd className={style.datoValor}>{textoFecha(fecha, esHoy)}</dd>
+                </div>
+                <div className={style.dato}>
+                  <dt className={style.datoTitulo}>
+                    <IconoReloj />
+                    Hora de ingreso
+                  </dt>
+                  <dd className={style.datoValor}>
+                    {esHoy ? (
+                      horaActual
+                    ) : (
+                      <input
+                        type="time"
+                        value={horaIngreso}
+                        onChange={(e) => onCambiarHoraIngreso(e.target.value)}
+                        disabled={registrando}
+                        aria-label="Hora de ingreso"
+                      />
+                    )}
+                  </dd>
+                </div>
                 </dl>
 
-                {esAusencia ? (
-                  <div className={style.campo}>
-                    <label htmlFor="descripcion-ausencia" className={style.campoTitulo}>
-                      Motivo de la ausencia <span className={style.obligatorio}>*</span>
-                    </label>
-                    <textarea
-                      id="descripcion-ausencia"
-                      className={style.textarea}
-                      value={descripcion}
-                      onChange={(e) => onCambiarDescripcion(e.target.value)}
-                      maxLength={maxDescripcion}
-                      rows={4}
-                      placeholder="Escribe la descripción de la ausencia..."
-                      aria-required="true"
-                      disabled={registrando}
-                      autoFocus
-                    />
-                    <div className={style.campoPie}>
-                      <span className={style.ayuda}>{descripcionVacia ? "La descripción es obligatoria." : ""}</span>
-                      <span className={style.contador}>
-                        {descripcion.length}/{maxDescripcion}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <p className={style.nota}>
-                    El ingreso se guardará con la hora del servidor al confirmar.
-                  </p>
-                )}
+                <p className={style.nota}>
+                  {esHoy
+                    ? "El ingreso se guardará con la hora del servidor al confirmar."
+                    : "Indica la hora real de ingreso de ese día; se guardará con la fecha elegida."}
+                </p>
               </section>
             </div>
 
@@ -420,10 +392,10 @@ const ModalNuevoRegistro = ({ control }: ModalNuevoRegistroProps) => {
                 type="button"
                 className={style.botonPrimario}
                 onClick={onConfirmar}
-                disabled={registrando || (esAusencia && descripcionVacia)}
-                autoFocus={!esAusencia}
+                disabled={registrando}
+                autoFocus
               >
-                {registrando ? "Registrando..." : esAusencia ? "Registrar ausencia" : "Confirmar asistencia"}
+                {registrando ? "Registrando..." : "Confirmar asistencia"}
               </button>
             </footer>
           </>

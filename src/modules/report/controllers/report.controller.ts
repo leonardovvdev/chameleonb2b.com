@@ -1,16 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { supabase } from "../../../lib/supabase"; // ← misma ruta que en report.service.ts
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
+import { supabase } from "../../../lib/supabase";
 import {
   buildSheets,
   downloadExcel,
   fetchContracts,
   fetchReport,
+  fetchReportRow,
   fetchStaffOptions,
+  pickRandomStaff,
 } from "../services/report.service";
 import type { AttendanceReport, ContractOption, StaffOption } from "../types/report.types";
 
+// en el import de ../services/report.service agrega: fetchReportRow,
+
 const SEARCH_DELAY_MS = 300;
-const REALTIME_DELAY_MS = 500;
+const EVENT_DELAY_MS = 150; // agrupa ráfagas de eventos
+const RESYNC_AFTER_HIDDEN_MS = 30_000;
+type Change = RealtimePostgresChangesPayload<Record<string, unknown>>;
 
 const messageOf = (err: unknown) => (err instanceof Error ? err.message : "Ocurrió un error inesperado.");
 const isAbort = (err: unknown) => err instanceof DOMException && err.name === "AbortError";
@@ -25,6 +32,7 @@ export function useReportController() {
   const [staffError, setStaffError] = useState<string | null>(null);
   const [staff, setStaff] = useState<StaffOption | null>(null);
   const staffCache = useRef(new Map<string, StaffOption[]>());
+  const [initialLoading, setInitialLoading] = useState(true); // buscando el trabajador inicial
 
   /* ── contratos ── */
   const [contracts, setContracts] = useState<ContractOption[]>([]);
@@ -38,6 +46,15 @@ export function useReportController() {
   const [sheetName, setSheetName] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const reportRequest = useRef(0);
+  const reportRef = useRef<AttendanceReport | null>(null);
+const reportCache = useRef(new Map<string, AttendanceReport>());
+const fullInFlight = useRef(false);
+const pendingFull = useRef(false);
+
+useEffect(() => {
+  reportRef.current = report;
+  if (report) reportCache.current.set(`${report.staff.id}:${report.contract.id}`, report);
+}, [report]);
 
   /* búsqueda con retraso */
   useEffect(() => {
@@ -45,7 +62,21 @@ export function useReportController() {
     return () => clearTimeout(t);
   }, [search]);
 
+    /* al entrar: un trabajador al azar (con contratos) para no mostrar la pantalla vacía */
+  useEffect(() => {
+    const controller = new AbortController();
+    pickRandomStaff(controller.signal)
+      .then((option) => {
+        // si el usuario ya eligió a alguien mientras tanto, se respeta su elección
+        if (option && !controller.signal.aborted) setStaff((actual) => actual ?? option);
+      })
+      .catch((err) => { if (!isAbort(err)) setStaffError(messageOf(err)); })
+      .finally(() => { if (!controller.signal.aborted) setInitialLoading(false); });
+    return () => controller.abort();
+  }, []);
+
   /* lista de personal: solo cuando el menú está abierto, con caché por término */
+
   useEffect(() => {
     if (!menuOpen) return;
     const cached = staffCache.current.get(debouncedSearch);
@@ -89,51 +120,140 @@ export function useReportController() {
   }, [staff]);
 
   /* reporte del contrato (silent = recarga por Realtime, sin parpadeo) */
-  const loadReport = useCallback(async (stffId: number, id: number, silent: boolean) => {
-    const request = ++reportRequest.current;
-    if (!silent) setReportLoading(true);
-    setReportError(null);
-    try {
-      const data = await fetchReport(stffId, id);
-      if (request === reportRequest.current) setReport(data);
-    } catch (err) {
-      if (request === reportRequest.current) setReportError(messageOf(err));
-    } finally {
-      if (request === reportRequest.current) setReportLoading(false);
+const loadReport = useCallback(async (stffId: number, id: number, silent: boolean): Promise<void> => {
+  const request = ++reportRequest.current;
+  fullInFlight.current = true;
+  if (!silent) setReportLoading(true);
+  setReportError(null);
+  try {
+    const data = await fetchReport(stffId, id);
+    if (request === reportRequest.current) setReport(data);
+  } catch (err) {
+    if (request === reportRequest.current) setReportError(messageOf(err));
+  } finally {
+    if (request === reportRequest.current) {
+      fullInFlight.current = false;
+      setReportLoading(false);
+      if (pendingFull.current) {
+        pendingFull.current = false;
+        void loadReport(stffId, id, true); // llegó un cambio mientras cargaba: se repite en silencio
+      }
     }
-  }, []);
+  }
+}, []);
 
-  useEffect(() => {
-    if (!staff || contractId === null) return;
-    setReport(null);
-    void loadReport(staff.stff_id, contractId, false);
-  }, [staff, contractId, loadReport]);
+/* al elegir contrato: lo guardado se ve al instante y se revalida en silencio */
+useEffect(() => {
+  if (!staff || contractId === null) return;
+  const cached = reportCache.current.get(`${staff.stff_id}:${contractId}`);
+  setReport(cached ?? null);
+  void loadReport(staff.stff_id, contractId, cached !== undefined);
+}, [staff, contractId, loadReport]);
 
-  /* sincronización: cualquier cambio de asistencia, incidencias o adelantos recarga el reporte */
-  useEffect(() => {
-    if (!staff || contractId === null) return;
+/* Realtime: cada evento actualiza SOLO la fila (fecha) afectada */
+useEffect(() => {
+  if (!staff || contractId === null) return;
+  const stffId = staff.stff_id;
+  const dirty = new Set<string>();
+  let full = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let disposed = false;
+  let wasSubscribed = false;
+  let hiddenAt = 0;
 
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const refresh = () => {
-      clearTimeout(timer);
-      timer = setTimeout(() => void loadReport(staff.stff_id, contractId, true), REALTIME_DELAY_MS);
-    };
-    const onTable = (table: string, filter?: string) =>
-      ({ event: "*", schema: "public", table, ...(filter ? { filter } : {}) }) as const;
+  const reloadAll = () => {
+    if (fullInFlight.current) { pendingFull.current = true; return; }
+    void loadReport(stffId, contractId, true);
+  };
 
-    const channel = supabase
-      .channel(`report-${staff.stff_id}-${contractId}`)
-      .on("postgres_changes", onTable("attendance", `stff_id=eq.${staff.stff_id}`), refresh)
-      .on("postgres_changes", onTable("staff_advancements", `stff_id=eq.${staff.stff_id}`), refresh)
-      // staff_discount_incidents no tiene el id del trabajador: se recarga ante cualquier cambio visible por RLS.
-      .on("postgres_changes", onTable("staff_discount_incidents"), refresh)
-      .subscribe();
+  const patchDay = async (date: string) => {
+    try {
+      const row = await fetchReportRow(stffId, contractId, date);
+      if (disposed) return;
+      if (!row) return reloadAll();
+      setReport((prev) => {
+        if (!prev) return prev;
+        const i = prev.rows.findIndex((r) => r.date === date);
+        if (i < 0) return prev;
+        const rows = prev.rows.slice();
+        rows[i] = row;
+        return { ...prev, rows };
+      });
+    } catch {
+      if (!disposed) reloadAll();
+    }
+  };
 
-    return () => {
-      clearTimeout(timer);
-      void supabase.removeChannel(channel);
-    };
-  }, [staff, contractId, loadReport]);
+  const flush = () => {
+    const dates = [...dirty];
+    dirty.clear();
+    const needFull = full;
+    full = false;
+    const known = reportRef.current;
+    if (needFull || !known || fullInFlight.current || dates.some((d) => !known.rows.some((r) => r.date === d))) {
+      return reloadAll();
+    }
+    dates.forEach((d) => void patchDay(d));
+  };
+
+  const queue = (date: string | null) => {
+    if (date) dirty.add(date.slice(0, 10));
+    else full = true;
+    clearTimeout(timer);
+    timer = setTimeout(flush, EVENT_DELAY_MS);
+  };
+
+  const dateOfAtt = (attId: unknown) =>
+    typeof attId === "number" ? (reportRef.current?.rows.find((r) => r.att_id === attId)?.date ?? null) : null;
+
+  const onAttendance = (p: Change) => {
+    const n = p.new as Record<string, unknown>;
+    const o = p.old as Record<string, unknown>;
+    if (p.eventType === "DELETE") {
+      const d = dateOfAtt(o.att_id); // los DELETE no se pueden filtrar: solo cuenta si es de este reporte
+      if (d) queue(d);
+      return;
+    }
+    queue(typeof n.att_date === "string" ? n.att_date : null);
+  };
+
+  // adelantos e incidencias: solo importan si su att_id pertenece a este reporte
+  const onChild = (p: Change) => {
+    const n = p.new as Record<string, unknown>;
+    const o = p.old as Record<string, unknown>;
+    const d = dateOfAtt(n.att_id ?? o.att_id);
+    if (d) queue(d);
+  };
+
+  const channel = supabase
+    .channel(`report-${stffId}-${contractId}`)
+    .on("postgres_changes", { event: "*", schema: "public", table: "attendance", filter: `stff_id=eq.${stffId}` }, onAttendance)
+    .on("postgres_changes", { event: "*", schema: "public", table: "staff_advancements" }, onChild)
+    .on("postgres_changes", { event: "*", schema: "public", table: "staff_discount_incidents" }, onChild)
+    .subscribe((status, err) => {
+      if (status === "SUBSCRIBED") {
+        if (wasSubscribed) reloadAll(); // se reconectó: pudo perder eventos
+        wasSubscribed = true;
+      } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        console.error("[report] Realtime:", status, err);
+      }
+    });
+
+  const onVisibility = () => {
+    if (document.visibilityState === "hidden") { hiddenAt = Date.now(); return; }
+    if (hiddenAt && Date.now() - hiddenAt > RESYNC_AFTER_HIDDEN_MS) reloadAll();
+  };
+  document.addEventListener("visibilitychange", onVisibility);
+  window.addEventListener("online", reloadAll);
+
+  return () => {
+    disposed = true;
+    clearTimeout(timer);
+    document.removeEventListener("visibilitychange", onVisibility);
+    window.removeEventListener("online", reloadAll);
+    void supabase.removeChannel(channel);
+  };
+}, [staff, contractId, loadReport]);
 
   /* hojas: misma estructura para la vista previa y el Excel */
   const sheets = useMemo(() => (report ? buildSheets(report) : []), [report]);
@@ -167,6 +287,7 @@ export function useReportController() {
 
   return {
     menuOpen, setMenuOpen, search, setSearch, staffOptions, staffLoading, staffError, staff, selectStaff,
+    initialLoading,
     contracts, contractsLoading, contractId, selectContract, selectedContract,
     report, reportLoading, reportError,
     sheets, activeSheet, setSheetName,

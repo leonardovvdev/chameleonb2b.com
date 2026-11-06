@@ -2,12 +2,15 @@ import { callBackend } from "./backend";
 import { conCache, invalidarCache } from "./cache";
 import type {
   CreateStaffPayload,
-  StaffFilters,
   StaffDetail,
+  StaffFilters,
   StaffListItem,
   SupervisorItem,
   UpdateStaffPayload,
 } from "../types";
+
+const CLAVE_SUPERVISORES = "staffs:supervisors";
+const invalidarSupervisores = () => invalidarCache(CLAVE_SUPERVISORES);
 
 export const listStaff = (
   page: number,
@@ -31,9 +34,6 @@ export const getSupervisors = (): Promise<SupervisorItem[]> =>
     () => callBackend<{ items: SupervisorItem[] }>("staffs/supervisors").then((r) => r.items),
     { ttlMs: 2 * 60_000 },
   );
-
-const CLAVE_SUPERVISORES = "staffs:supervisors";
-const invalidarSupervisores = () => invalidarCache(CLAVE_SUPERVISORES);
 
 export const setStaffActive = (stffId: number, active: boolean) =>
   callBackend<{ id: number; active: boolean }>("staffs/active", {
@@ -70,5 +70,9 @@ export const uploadStaffImage = (
 ): Promise<{ stff_link_img: string; img_url: string | null }> => {
   const formData = new FormData();
   formData.append("file", archivo);
-  return callBackend("staffs/photo", { method: "POST", query: { id: stffId }, body: formData });
+  return callBackend<{ stff_link_img: string; img_url: string | null }>("staffs/photo", {
+    method: "POST",
+    query: { id: stffId },
+    body: formData,
+  }).finally(invalidarSupervisores); // la foto también aparece en la lista de jefes directos
 };

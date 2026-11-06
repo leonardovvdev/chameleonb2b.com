@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
-import { getAfps } from "../../../../../core/services";
 import style from "./modal.module.css";
 import { icon } from "../../../../../core/icons";
 import type { FormState } from "./parte1";
 import type { HorarioState, RefrigerioState } from "./parte2";
 import { DIAS_SEMANA, type FeriadoState } from "./parte3";
-import type { HonorariosState } from "./parte4";
+import type { HonorariosState, TipoPago } from "./parte4";
 
 /* Iconos de `icon` usados en este paso. */
 const ICONOS = {
@@ -16,17 +15,17 @@ const ICONOS = {
   acceso: icon.iconLock,
 };
 
-// const ETIQUETA_SUELDO: Record<TipoPago, string> = {
-//   monthly: "Sueldo mensual",
-//   weekly: "Sueldo semanal",
-//   daily: "Sueldo diario",
-// };
+const ETIQUETA_SUELDO: Record<TipoPago, string> = {
+  monthly: "Sueldo mensual",
+  weekly: "Sueldo semanal",
+  daily: "Sueldo diario",
+};
 
-// const formatearSueldo = (valor: string) => {
-//   const n = Number(valor);
-//   if (!valor || Number.isNaN(n)) return "—";
-//   return `S/ ${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-// };
+const formatearSueldo = (valor: string) => {
+  const n = Number(valor);
+  if (!valor || Number.isNaN(n)) return "—";
+  return `S/ ${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
 
 /* Caja con icono (para las filas que sí llevan icono) */
 const CajaIcono = ({ Icono }: { Icono: (props: { className?: string }) => ReactNode }) => (
@@ -73,15 +72,6 @@ const Parte5 = ({
   // La foto nueva tiene prioridad sobre la que ya tenía
   const fotoUrl = fotoNuevaUrl ?? fotoActualUrl;
   const [avatarFallo, setAvatarFallo] = useState(false);
-  const [afpNombre, setAfpNombre] = useState("—");
-  useEffect(() => {
-    if (!honorarios.descuentaAfp) return;
-    getAfps()
-      .then((items) =>
-        setAfpNombre(items.find((a) => String(a.id) === honorarios.afpId)?.name ?? "—"),
-      )
-      .catch(() => setAfpNombre("—"));
-  }, [honorarios.descuentaAfp, honorarios.afpId]);
 
   const descuentosActivos =
     [
@@ -91,6 +81,7 @@ const Parte5 = ({
     ]
       .filter(Boolean)
       .join(", ") || "Ninguno";
+
   // Si cambia la URL del encargado, se vuelve a intentar cargarla
   useEffect(() => setAvatarFallo(false), [jefeAvatar]);
 
@@ -115,8 +106,6 @@ const Parte5 = ({
     horario.tipo === "fixed"
       ? `${horario.entrada} a ${horario.salida}`
       : `Flexible · ${horario.horas} horas`;
-
-
 
   const textoRefrigerio =
     refrigerio.tipo === "none"
@@ -237,7 +226,6 @@ const Parte5 = ({
                 </div>
               ))}
             </div>
-
           </dl>
         </section>
 
@@ -248,12 +236,12 @@ const Parte5 = ({
           </h4>
 
           <div className={style.resSueldo}>
-            <p className={style.resEtiqueta}>Descuentos</p>
-            <p className={style.resValor}>{descuentosActivos}</p>
+            <p className={style.resEtiqueta}>{ETIQUETA_SUELDO[honorarios.tipoPago]}</p>
+            <p className={style.resValor}>{formatearSueldo(honorarios.sueldo)}</p>
           </div>
           <div className={style.resSueldo}>
-            <p className={style.resEtiqueta}>AFP</p>
-            <p className={style.resValor}>{honorarios.descuentaAfp ? afpNombre : "No aplica"}</p>
+            <p className={style.resEtiqueta}>Descuentos</p>
+            <p className={style.resValor}>{descuentosActivos}</p>
           </div>
         </section>
       </div>

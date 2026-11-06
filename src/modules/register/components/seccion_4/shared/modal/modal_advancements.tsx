@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { callBackend } from "../../../../../../core/services/backend";
 import type { StaffAttendance } from "../../../../types/register.types";
 import style from "./modal_advancements.module.css";
-
+import { usePuedeEliminar } from "../../../../controllers/register.controller";
+import { BotonTacho } from "./modal_incidents";
 /* ═════════════════════════════════════════════════════════════════════════════
  * Pestaña "Adelantos" del modal de un registro.
  * Todo vive en este archivo: tipos, llamadas al backend, hook y vista.
@@ -35,6 +36,8 @@ interface AdelantosResponse {
 }
 
 type AdelantoPayload = {
+  /** Registro (asistencia) desde el que se crea el adelanto. */
+  attId: number;
   stffId: number;
   amount: number;
   description: string | null;
@@ -46,22 +49,35 @@ interface Actor {
   name: string | null;
 }
 
-/* ───────── Llamadas al backend ───────── */
+/* ───────── Datos locales (sin backend) ───────── */
+/* ───────── Llamadas al backend (Edge Function backend-chameleonb2b) ───────── */
 
+/** GET /attendance/advancements → adelantos de ese personal, más recientes primero. */
 const getAdelantos = (stffId: number, page: number): Promise<AdelantosResponse> =>
-  callBackend<AdelantosResponse>("staff-advancements", {
+  callBackend<AdelantosResponse>("attendance/advancements", {
     query: { stffId, page, pageSize: POR_PAGINA },
   });
 
+/** POST /attendance/advancements → el adelanto queda ligado al registro abierto (attId). */
 const createAdelanto = (payload: AdelantoPayload): Promise<Adelanto> =>
-  callBackend<Adelanto>("staff-advancements", { method: "POST", body: payload });
+  callBackend<Adelanto>("attendance/advancements", {
+    method: "POST",
+    body: { attId: payload.attId, amount: payload.amount, description: payload.description },
+  });
 
+/** PATCH /attendance/advancements → solo cambian importe y descripción. */
 const updateAdelanto = (id: number, payload: AdelantoPayload): Promise<Adelanto> =>
-  callBackend<Adelanto>("staff-advancements", { method: "PATCH", query: { id }, body: payload });
+  callBackend<Adelanto>("attendance/advancements", {
+    method: "PATCH",
+    body: { id, amount: payload.amount, description: payload.description },
+  });
 
-const getActor = (): Promise<Actor> => callBackend<Actor>("staff-advancements/actor");
+  /** DELETE /attendance/advancements?id= */
+const deleteAdelanto = (id: number): Promise<{ id: number }> =>
+  callBackend<{ id: number }>("attendance/advancements", { method: "DELETE", query: { id } });
 
-
+/** Quien usa el sistema es el titular de la cuenta (null = "Super admin"). */
+const getActor = async (): Promise<Actor> => ({ staffId: null, name: null });
 /* ───────── Apoyo ───────── */
 
 /** "2026-10-26" → "26 Oct 2026" */
@@ -116,6 +132,13 @@ const useAdelantosDe = (stffId: number) => {
   const [cargando, setCargando] = useState(true);
   const [cargandoMas, setCargandoMas] = useState(false);
   const [error, setError] = useState("");
+    const eliminar = useCallback(async (id: number) => {
+    await deleteAdelanto(id);
+    setLista((previa) => previa.filter((a) => a.id !== id));
+    setTotal((t) => Math.max(0, t - 1));
+  }, []);
+
+  
 
   useEffect(() => {
     let cancelado = false;
@@ -166,13 +189,15 @@ const useAdelantosDe = (stffId: number) => {
     setLista((previa) => ordenar(previa.map((a) => (a.id === id ? actualizado : a))));
   }, []);
 
-  return { lista, total, cargando, cargandoMas, error, cargarMas, crear, editar };
+  return { lista, total, cargando, cargandoMas, error, cargarMas, crear, editar, eliminar };
 };
 
 /* ───────── Formulario (sirve para crear y para editar) ───────── */
 
 interface FormularioProps {
   stffId: number;
+  /** Registro (asistencia) al que se ligará el adelanto nuevo. */
+  attId: number;
   /** Si viene, edita ese adelanto; si no, crea uno nuevo. */
   adelanto?: Adelanto;
   /** Quien está autenticado: es quien entrega al crear. null mientras carga. */
@@ -186,6 +211,7 @@ interface FormularioProps {
 
 const Formulario = ({
   stffId,
+  attId,
   adelanto,
   actor,
   textoBoton,
@@ -214,6 +240,7 @@ const Formulario = ({
     setErrorGuardar("");
     try {
       await onGuardar({
+        attId,
         stffId,
         amount: montoNumero,
         description: descripcion.trim() === "" ? null : descripcion.trim(),
@@ -303,9 +330,10 @@ const Formulario = ({
 
 const ModalAdvancements = ({ registro }: { registro: StaffAttendance }) => {
   const actor = useActor();
-  const { lista, total, cargando, cargandoMas, error, cargarMas, crear, editar } = useAdelantosDe(
+  const { lista, total, cargando, cargandoMas, error, cargarMas, crear, editar, eliminar } = useAdelantosDe(
     registro.stff_id
   );
+  const puedeEliminar = usePuedeEliminar();
   const [editandoId, setEditandoId] = useState<number | null>(null);
 
   const nombre = nombreCompleto(registro.stff_name, registro.stff_lastname);
@@ -323,6 +351,7 @@ const ModalAdvancements = ({ registro }: { registro: StaffAttendance }) => {
 
         <Formulario
           stffId={registro.stff_id}
+          attId={registro.att_id}
           actor={actor}
           textoBoton="Crear adelanto"
           textoGuardando="Creando…"
@@ -353,6 +382,7 @@ const ModalAdvancements = ({ registro }: { registro: StaffAttendance }) => {
                     <div className={style.edicion}>
                       <Formulario
                         stffId={registro.stff_id}
+                        attId={registro.att_id}
                         adelanto={a}
                         actor={actor}
                         textoBoton="Guardar cambios"
@@ -371,14 +401,15 @@ const ModalAdvancements = ({ registro }: { registro: StaffAttendance }) => {
                         <span className={style.itemMonto}>{formatMonto(a.amount)}</span>
                       </div>
                       {a.description && <p className={style.itemDescripcion}>{a.description}</p>}
-                      <div className={style.itemPie}>
-                        <span className={style.itemMeta}>
-                          Entregado por {textoEntrega(a.delivered_by_name)}
-                        </span>
-                        <button type="button" className={style.btnEditar} onClick={() => setEditandoId(a.id)}>
-                          Editar
-                        </button>
-                      </div>
+                        <div className={style.itemPie}>
+                          <span className={style.itemMeta}>Entregado por {textoEntrega(a.delivered_by_name)}</span>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <button type="button" className={style.btnEditar} onClick={() => setEditandoId(a.id)}>
+                              Editar
+                            </button>
+                            {puedeEliminar && <BotonTacho etiqueta="Eliminar adelanto" onEliminar={() => eliminar(a.id)} />}
+                          </span>
+                        </div>
                     </>
                   )}
                 </li>

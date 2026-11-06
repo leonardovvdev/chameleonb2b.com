@@ -5,6 +5,7 @@ import type {
   ReportRow,
   ReportSchedule,
   ReportSheet,
+  ReportSummaryLine,
   StaffOption,
 } from "../types/report.types";
 
@@ -29,7 +30,21 @@ export async function fetchStaffOptions(search: string, signal?: AbortSignal): P
   return res.items;
 }
 
+/** Personal al azar que tenga al menos un contrato (para no abrir la pantalla vacía). Prefiere personal activo. */
+export async function pickRandomStaff(signal?: AbortSignal): Promise<StaffOption | null> {
+  const all = await fetchStaffOptions("", signal);
+  const activos = all.filter((s) => s.stff_active);
+  const pool = [...(activos.length ? activos : all)].sort(() => Math.random() - 0.5);
+
+  for (const s of pool.slice(0, 6)) {
+    const contratos = await fetchContracts(s.stff_id, signal);
+    if (contratos.length > 0) return s;
+  }
+  return pool[0] ?? null;
+}
+
 /** Contratos en orden cronológico (el backend los entrega del más reciente al más antiguo). */
+
 export async function fetchContracts(stffId: number, signal?: AbortSignal): Promise<ContractOption[]> {
   const res = await request<{ items: ContractOption[] }>(`/staff-contracts?stffId=${stffId}`, signal);
   return [...res.items].sort((a, b) => a.number - b.number);
@@ -102,6 +117,29 @@ function scheduleText(schedule: ReportSchedule | null): string {
   return `${days}: ${fmtHHMM(schedule.start)} A ${fmtHHMM(schedule.end)}.`;
 }
 
+/** Horario que rigió cada día de un mes (si cambió dentro del mes, una línea por tramo). */
+function scheduleLineFor(report: AttendanceReport, monthRows: ReportRow[]): string {
+  const periods = report.schedules ?? [];
+  const used = [
+    ...new Set(
+      monthRows
+        .map((r) => r.schedule_index)
+        .filter((i): i is number => typeof i === "number" && !!periods[i]),
+    ),
+  ].sort((a, b) => a - b);
+
+  if (used.length === 0) return `HORARIO LABORAL: ${scheduleText(report.schedule)}`;
+  if (used.length === 1) return `HORARIO LABORAL: ${scheduleText(periods[used[0]].schedule)}`;
+
+  const lines = used.map((i) => {
+    const days = monthRows.filter((r) => r.schedule_index === i);
+    const from = days[0].date;
+    const to = days[days.length - 1].date;
+    return `DEL ${fmtDate(from)} AL ${fmtDate(to)}: ${scheduleText(periods[i].schedule)}`;
+  });
+  return ["HORARIO LABORAL (CAMBIÓ DURANTE EL MES):", ...lines].join("\n");
+}
+
 /* ───────────────────────── Reporte → hojas (única fuente) ───────────────────────── */
 
 function monthKeys(report: AttendanceReport): string[] {
@@ -148,16 +186,114 @@ function rowCells(row: ReportRow, worked: number | null): string[] {
     text(row.justification_refreshment_delay),
   ];
 }
+/* ───────────────────────── Resumen de pago del mes ───────────────────────── */
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+const sumBy = <T,>(list: T[], pick: (item: T) => number) => list.reduce((acc, item) => acc + pick(item), 0);
+
+const hhmmToMin = (value: string): number => {
+  const [h, m] = value.split(":").map(Number);
+  return h * 60 + m;
+};
+
+/** Minutos que se trabajan por día: fijo = jornada - refrigerio; flexible = minutos requeridos; si no hay dato, 8 h. */
+function minutesPerDay(schedule: ReportSchedule | null): number {
+  const DEFAULT_MINUTES = 480;
+  if (!schedule) return DEFAULT_MINUTES;
+
+  if (schedule.type === "flexible") {
+    return schedule.requiredMinutes && schedule.requiredMinutes > 0 ? schedule.requiredMinutes : DEFAULT_MINUTES;
+  }
+  if (schedule.type === "fixed" && schedule.start && schedule.end) {
+    const r = schedule.refreshment;
+    const rest = r ? (r.minutes ?? (r.start && r.end ? hhmmToMin(r.end) - hhmmToMin(r.start) : 0)) : 0;
+    const net = hhmmToMin(schedule.end) - hhmmToMin(schedule.start) - Math.max(0, rest);
+    return net > 0 ? net : DEFAULT_MINUTES;
+  }
+  return DEFAULT_MINUTES;
+}
+
+/** Cuadro de pago de UN mes: solo cuentan los días de ese mes. Los descuentos van en negativo. */
+function buildSummary(report: AttendanceReport, monthRows: ReportRow[]): ReportSummaryLine[] {
+  const c = report.contract;
+  const salary = c.salary_amount;
+  const dayRate = salary / 30; // pago de un día
+
+  // El valor del minuto depende de la jornada del horario que rigió CADA día (puede cambiar dentro del mes).
+  const periods = report.schedules ?? [];
+  const scheduleOf = (r: ReportRow): ReportSchedule | null =>
+    (r.schedule_index !== null && r.schedule_index !== undefined ? periods[r.schedule_index]?.schedule : undefined) ??
+    report.schedule;
+  const minuteRateOf = (r: ReportRow) => dayRate / minutesPerDay(scheduleOf(r));
+
+  const absences = monthRows.filter((r) => r.is_absence).length;
+  const delayMinutes = sumBy(monthRows, (r) => r.delay_minutes ?? 0);
+  const refreshmentMinutes = sumBy(monthRows, (r) => r.refreshment_delay_minutes ?? 0);
+  const advancements = r2(sumBy(monthRows, (r) => r.advancement ?? 0));
+  const incidents = r2(sumBy(monthRows, (r) => sumBy(r.incidents, (i) => i.amount)));
+  const afpPercent = c.afp_discount + c.insurance_premium;
+  const afp = r2((salary * afpPercent) / 100);
+
+  const rates = new Set(monthRows.map((r) => minuteRateOf(r).toFixed(4)));
+  const mixedRates = rates.size > 1;
+  const rateText = `S/ ${(rates.size === 1 ? [...rates][0] : (dayRate / minutesPerDay(report.schedule)).toFixed(4))} por min`;
+  const calc = (minutes: number) =>
+    mixedRates ? `${minutes} min (tarifa según el horario de cada día)` : `${minutes} min × ${rateText}`;
+
+  const absenceDiscount = c.discount_absence ? r2(absences * dayRate) : 0;
+  const delayDiscount = c.discount_delay ? r2(sumBy(monthRows, (r) => (r.delay_minutes ?? 0) * minuteRateOf(r))) : 0;
+  const refreshmentDiscount = c.discount_refreshment_delay
+    ? r2(sumBy(monthRows, (r) => (r.refreshment_delay_minutes ?? 0) * minuteRateOf(r)))
+    : 0;
+
+  const lines: ReportSummaryLine[] = [
+    { kind: "base", label: "SUELDO DEL MES", detail: "Sueldo mensual del contrato", amount: r2(salary) },
+    {
+      kind: "discount",
+      label: "FALTAS",
+      detail: c.discount_absence
+        ? `${absences} día(s) × ${money(dayRate)} (sueldo / 30)`
+        : `${absences} día(s) - el contrato no las descuenta`,
+      amount: -absenceDiscount,
+    },
+    {
+      kind: "discount",
+      label: "TARDANZA DE LLEGADA",
+      detail: c.discount_delay ? calc(delayMinutes) : `${delayMinutes} min - el contrato no las descuenta`,
+      amount: -delayDiscount,
+    },
+    {
+      kind: "discount",
+      label: "DEMORA EN ALMUERZO",
+      detail: c.discount_refreshment_delay
+        ? calc(refreshmentMinutes)
+        : `${refreshmentMinutes} min - el contrato no las descuenta`,
+      amount: -refreshmentDiscount,
+    },
+    { kind: "discount", label: "ADELANTOS", detail: "Total de adelantos del mes", amount: -advancements },
+    { kind: "discount", label: "INCIDENCIAS", detail: "Total de incidencias (descuentos) del mes", amount: -incidents },
+    {
+      kind: "discount",
+      label: "AFP",
+      detail: `AFP ${c.afp_discount}% + seguro ${c.insurance_premium}% = ${r2(afpPercent)}% del sueldo`,
+      amount: -afp,
+    },
+  ];
+
+  const total = r2(lines.reduce((acc, l) => acc + l.amount, 0));
+  lines.push({ kind: "total", label: "TOTAL A PAGAR", detail: "Sueldo menos todos los descuentos del mes", amount: total });
+  return lines;
+}
 
 /** Una hoja por mes del contrato. La vista previa y el Excel usan exactamente este resultado. */
+/** Una hoja por mes del contrato. La vista previa y el Excel usan exactamente este resultado. */
 export function buildSheets(report: AttendanceReport): ReportSheet[] {
-  const { staff, contract, schedule } = report;
+  const { staff, contract } = report;
 
   return monthKeys(report).map((key) => {
     let worked = 0;
-    const rows = report.rows
-      .filter((r) => r.date.startsWith(key))
-      .map((r) => rowCells(r, r.is_worked ? ++worked : null));
+    const monthRows = report.rows.filter((r) => r.date.startsWith(key));
+    const rows = monthRows.map((r) => rowCells(r, r.is_worked ? ++worked : null));
 
     return {
       name: `${MONTHS[Number(key.slice(5, 7)) - 1]} ${key.slice(0, 4)}`,
@@ -166,9 +302,10 @@ export function buildSheets(report: AttendanceReport): ReportSheet[] {
       dniLine: `DNI: ${staff.dni}`,
       startLine: `INICIO LABORAL: ${contract.start_date ? fmtDate(contract.start_date) : "PENDIENTE"}`,
       endLine: `FIN LABORAL: ${contract.end_date ? fmtDate(contract.end_date) : "PENDIENTE"}`,
-      scheduleLine: `HORARIO LABORAL: ${scheduleText(schedule)}`,
+      scheduleLine: scheduleLineFor(report, monthRows),
       header: REPORT_HEADER,
       rows,
+      summary: buildSummary(report, monthRows),
     };
   });
 }
@@ -216,7 +353,7 @@ export async function downloadExcel(report: AttendanceReport): Promise<void> {
     ws.getRow(1).height = 30;
     ws.getRow(2).height = 22;
     ws.getRow(3).height = 22;
-    ws.getRow(4).height = 22;
+    ws.getRow(4).height = 22 * Math.max(1, sheet.scheduleLine.split("\n").length);
 
     const header = ws.getRow(5);
     sheet.header.forEach((label, i) => {
@@ -240,6 +377,26 @@ export async function downloadExcel(report: AttendanceReport): Promise<void> {
       });
     });
 
+    // Cuadro de resumen de pago del mes: debajo de la tabla, separado por una fila vacía.
+    const top = 6 + sheet.rows.length + 1;
+    band(top, 1, 10, "RESUMEN DE PAGO DEL MES", { size: 12, fill: NAVY, color: "FFFFFFFF", align: "center" });
+    band(top + 1, 1, 4, "CONCEPTO", { size: 10, fill: BLUE, color: "FFFFFFFF", align: "center" });
+    band(top + 1, 5, 8, "DETALLE", { size: 10, fill: BLUE, color: "FFFFFFFF", align: "center" });
+    band(top + 1, 9, 10, "MONTO", { size: 10, fill: BLUE, color: "FFFFFFFF", align: "center" });
+
+    sheet.summary.forEach((line, i) => {
+      const r = top + 2 + i;
+      const isTotal = line.kind === "total";
+      const fill = isTotal ? SOFT : undefined;
+      band(r, 1, 4, line.label, { size: isTotal ? 12 : 10, fill });
+      band(r, 5, 8, line.detail, { bold: false, size: 10, fill });
+      band(r, 9, 10, "", { size: isTotal ? 12 : 10, fill });
+      const amount = ws.getCell(r, 9);
+      amount.value = line.amount;
+      amount.numFmt = '"S/ "#,##0.00;[Red]-"S/ "#,##0.00';
+      amount.alignment = { vertical: "middle", horizontal: "right", indent: 1 };
+    });
+
     ws.views = [{ state: "frozen", ySplit: 5 }]; // título y encabezados visibles al desplazarse
   }
 
@@ -254,4 +411,15 @@ export async function downloadExcel(report: AttendanceReport): Promise<void> {
     .replace(/\s+/g, "_");
   link.click();
   URL.revokeObjectURL(url);
+}
+
+export async function fetchReportRow(
+  stffId: number,
+  contractId: number,
+  date: string,
+  signal?: AbortSignal,
+): Promise<ReportRow | null> {
+  const params = new URLSearchParams({ stffId: String(stffId), contractId: String(contractId), date });
+  const res = await request<{ row: ReportRow | null }>(`/attendance/report/row?${params}`, signal);
+  return res.row;
 }

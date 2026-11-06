@@ -74,9 +74,9 @@ const ModalRegistro = ({
             <h3 className={style.titulo}>
               {registro.stff_name} {registro.stff_lastname}
             </h3>
-            <p className={style.subtitulo}>
-              Registro N° {registro.att_id} · {formatFecha(registro.att_fecha)}
-            </p>
+              <p className={style.subtitulo}>
+                Registro N° {registro.att_id} · {formatFecha(registro.att_date)}
+              </p>
           </div>
           <button
             type="button"
@@ -126,7 +126,11 @@ const ModalRegistro = ({
             />
           </div>
           <div role="tabpanel" hidden={pestana !== "incidencias"}>
-            <ModalIncidents registro={registro} />
+            <ModalIncidents
+              registro={registro}
+              onCreada={(total) => onFilaActualizada(registro.att_id, { incidents_count: total })}
+              onEliminada={(total) => onFilaActualizada(registro.att_id, { incidents_count: total })}
+            />
           </div>
           <div role="tabpanel" hidden={pestana !== "adelantos"}>
             <ModalAdvancements registro={registro} />

@@ -1,106 +1,161 @@
-// register.service.tsx
-import { callBackend } from "../../../core/services/backend";
 import type {
-  AbsenceResponse,
-  AttendanceResponse,
-  CheckInResponse,
-  IncidenciaDescuento,
-  PendingFiltersPayload,
+  Incidencia,
   RegistroDetalle,
+  StaffAttendance,
   StaffPendiente,
   TiemposRegistro,
   TipoJustificacionApi,
 } from "../types/register.types";
+// El JWT de la sesión lo agrega supabase-js dentro de callBackend: aquí no se lee ningún token.
+import { callBackend } from "../../../core/services/backend";
+import { getCustomerJobPositions, getCustomerRoles } from "../../../core/services/catalog.service";
 
-/**
- * Asistencias del personal del customer en una fecha (YYYY-MM-DD)
- * + cantidad de personal activo. El backend saca el customer del JWT.
- */
-export const getAttendanceByDate = (date: string): Promise<AttendanceResponse> =>
-  callBackend<AttendanceResponse>("attendance", { query: { date } });
+export const esperar = (ms = 250) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-const getPending = (ruta: string, filtros: PendingFiltersPayload): Promise<StaffPendiente[]> =>
-  callBackend<{ items: StaffPendiente[] }>(ruta, {
-    query: { search: filtros.search, cargoId: filtros.cargoId, rolId: filtros.rolId },
-  }).then((r) => r.items);
+export interface TiemposPayload {
+  inicioJornada: string | null;
+  inicioReceso: string | null;
+  finReceso: string | null;
+  finJornada: string | null;
+}
 
-/** Personal activo que todavía no registró su ingreso hoy (con búsqueda y filtro de cargo o rol). */
-export const getPendingCheckIn = (filtros: PendingFiltersPayload) =>
-  getPending("attendance/pending", filtros);
+/** PATCH /attendance/times → devuelve las 4 horas ya guardadas. */
+export const updateAttendanceTimes = (attId: number, t: TiemposPayload): Promise<TiemposRegistro> =>
+  callBackend<TiemposRegistro>("attendance/times", { method: "PATCH", body: { id: attId, ...t } });
 
-/** Personal activo sin ingreso ni ausencia registrada hoy. */
-export const getPendingAbsence = (filtros: PendingFiltersPayload) =>
-  getPending("attendance/pending-absence", filtros);
+/** PATCH /attendance/observation (texto vacío o null = borrar la observación). */
+export const updateAttendanceObservation = (
+  attId: number,
+  texto: string | null
+): Promise<{ att_observation: string | null }> =>
+  callBackend<{ att_observation: string | null }>("attendance/observation", {
+    method: "PATCH",
+    body: { id: attId, text: texto },
+  });
 
-/** Registra el ingreso de hoy (att_schedule_start = hora actual del servidor). */
-export const registerCheckIn = (stffId: number): Promise<CheckInResponse> =>
-  callBackend<CheckInResponse>("attendance", { method: "POST", body: { stffId } });
+/** PATCH /attendance/justification (tipo: delay | refreshment_delay | absence). */
+export const updateAttendanceJustification = (
+  attId: number,
+  tipo: TipoJustificacionApi,
+  texto: string | null
+): Promise<{ text: string | null }> =>
+  callBackend<{ text: string | null }>("attendance/justification", {
+    method: "PATCH",
+    body: { id: attId, type: tipo, text: texto },
+  });
 
-/** Registra la ausencia de hoy con su descripción (obligatoria, máx. 200). */
-export const registerAbsence = (stffId: number, description: string): Promise<AbsenceResponse> =>
-  callBackend<AbsenceResponse>("attendance/absence", { method: "POST", body: { stffId, description } });
-
-/* ───────── Modal de un registro ───────── */
-
-/** Observación, rol y total de registros del personal de una asistencia. */
+/** GET /attendance/detail?id= → rol, total de registros y observación. */
 export const getAttendanceDetail = (attId: number): Promise<RegistroDetalle> =>
   callBackend<RegistroDetalle>("attendance/detail", { query: { id: attId } });
 
-/** Reemplaza las 4 horas del registro (ISO 8601 o null). */
-export const updateAttendanceTimes = (
-  attId: number,
-  horas: {
-    inicioJornada: string | null;
-    inicioReceso: string | null;
-    finReceso: string | null;
-    finJornada: string | null;
+/** GET /attendance/incidents?attId= */
+export const getIncidencias = async (attId: number): Promise<Incidencia[]> =>
+  (await callBackend<{ items: Incidencia[] }>("attendance/incidents", { query: { attId } })).items;
+
+/** POST /attendance/incidents */
+export const createIncidencia = (attId: number, descripcion: string, monto: number): Promise<Incidencia> =>
+  callBackend<Incidencia>("attendance/incidents", {
+    method: "POST",
+    body: { attId, description: descripcion, amount: monto },
+  });
+
+/* ═══════════ Sección 3 · datos reales (Supabase Edge Function) ═══════════ */
+
+export interface CatalogoItem {
+  id: number;
+  name: string;
+}
+
+/** Cargos del customer (con la caché de core). */
+export const getCargos = async (): Promise<CatalogoItem[]> =>
+  (await getCustomerJobPositions()).map(({ id, name }) => ({ id, name }));
+
+/** Roles del customer (con la caché de core). */
+export const getRoles = async (): Promise<CatalogoItem[]> =>
+  (await getCustomerRoles()).map(({ id, name }) => ({ id, name }));
+
+interface StaffApi {
+  stff_id: number;
+  stff_name: string;
+  stff_lastname: string;
+  stff_dni: string;
+  img_url: string | null;
+  cust_jb_pstn_id: number | null;
+  job_position_name: string | null;
+  cust_role_id: number | null;
+  role_name: string | null;
+}
+
+/** GET /staffs (existente): todo el personal ACTIVO, paginando de 100 en 100. */
+export const getPersonalActivo = async (): Promise<StaffPendiente[]> => {
+  const resultado: StaffPendiente[] = [];
+  const PAGE_SIZE = 100;
+
+  for (let page = 1; page < 100; page++) {
+    const { items, count } = await callBackend<{ items: StaffApi[]; count: number }>("staffs", {
+      query: { estado: "ACTIVO", page, pageSize: PAGE_SIZE },
+    });
+    for (const s of items) {
+      resultado.push({
+        stff_id: s.stff_id,
+        stff_name: s.stff_name,
+        stff_lastname: s.stff_lastname,
+        stff_dni: s.stff_dni,
+        img_url: s.img_url,
+        job_position_id: s.cust_jb_pstn_id,
+        job_position_name: s.job_position_name,
+        role_id: s.cust_role_id,
+        role_name: s.role_name,
+      });
+    }
+    if (items.length < PAGE_SIZE || resultado.length >= count) break;
   }
-): Promise<TiemposRegistro & { att_id: number }> =>
-  callBackend<TiemposRegistro & { att_id: number }>("attendance/times", {
-    method: "PATCH",
-    query: { id: attId },
-    body: horas,
-  });
+  return resultado;
+};
 
-/** Guarda la observación (null o vacío = borrarla). */
-export const updateAttendanceObservation = (
-  attId: number,
-  observation: string | null
-): Promise<{ att_id: number; att_observation: string | null }> =>
-  callBackend<{ att_id: number; att_observation: string | null }>("attendance/observation", {
-    method: "PATCH",
-    query: { id: attId },
-    body: { observation },
-  });
-
-/** Guarda una justificación (null o vacío = borrarla). */
-export const updateAttendanceJustification = (
-  attId: number,
-  type: TipoJustificacionApi,
-  text: string | null
-): Promise<{ att_id: number; type: TipoJustificacionApi; text: string | null }> =>
-  callBackend<{ att_id: number; type: TipoJustificacionApi; text: string | null }>(
-    "attendance/justification",
-    { method: "PATCH", query: { id: attId }, body: { type, text } }
+/**
+ * GET /attendance/eligible-staff?date=YYYY-MM-DD
+ * Personal ACTIVO con un contrato que cubre esa fecha (los de contrato aún sin inicio también entran).
+ */
+export const getPersonalElegible = async (fecha: string): Promise<StaffPendiente[]> =>
+  (await callBackend<{ items: StaffApi[] }>("attendance/eligible-staff", { query: { date: fecha } })).items.map(
+    (s) => ({
+      stff_id: s.stff_id,
+      stff_name: s.stff_name,
+      stff_lastname: s.stff_lastname,
+      stff_dni: s.stff_dni,
+      img_url: s.img_url,
+      job_position_id: s.cust_jb_pstn_id,
+      job_position_name: s.job_position_name,
+      role_id: s.cust_role_id,
+      role_name: s.role_name,
+    })
   );
 
-/** Elimina el registro de asistencia. */
-export const deleteAttendance = (attId: number): Promise<{ ok: boolean }> =>
-  callBackend<{ ok: boolean }>("attendance", { method: "DELETE", query: { id: attId } });
+/** GET /attendance?date=YYYY-MM-DD (nuevo) */
+export const getAsistenciasPorFecha = async (fecha: string): Promise<StaffAttendance[]> =>
+  (await callBackend<{ items: StaffAttendance[] }>("attendance", { query: { date: fecha } })).items;
 
-/** Incidencias con descuento de un registro. */
-export const getIncidents = (attId: number): Promise<IncidenciaDescuento[]> =>
-  callBackend<{ items: IncidenciaDescuento[] }>("staff-discount-incidents", {
-    query: { attId },
-  }).then((r) => r.items);
+export interface NuevoRegistroPayload {
+  staffId: number;
+  /** YYYY-MM-DD (la fecha elegida en el calendario) */
+  date: string;
+  /** Timestamp ISO de ingreso. Si se omite, el servidor usa su hora actual. */
+  startAt?: string;
+}
 
-/** Crea una incidencia (tipo "other"); el backend anota quién la registró. */
-export const createIncident = (
-  attId: number,
-  description: string,
-  amount: number
-): Promise<IncidenciaDescuento> =>
-  callBackend<IncidenciaDescuento>("staff-discount-incidents", {
-    method: "POST",
-    body: { attId, description, amount },
-  });
+/** POST /attendance (nuevo): el servidor pone la hora de ingreso. */
+export const crearAsistencia = (payload: NuevoRegistroPayload): Promise<StaffAttendance> =>
+  callBackend<StaffAttendance>("attendance", { method: "POST", body: { ...payload } });
+
+/** DELETE /attendance?id= (nuevo) */
+export const eliminarAsistencia = (attId: number) =>
+  callBackend<{ id: number }>("attendance", { method: "DELETE", query: { id: attId } });
+
+/** GET /attendance/can-delete */
+export const getPuedeEliminar = async (): Promise<boolean> =>
+  (await callBackend<{ allowed: boolean }>("attendance/can-delete")).allowed;
+
+/** DELETE /attendance/incidents?id= → { id, total } */
+export const deleteIncidencia = (id: number): Promise<{ id: number; total: number }> =>
+  callBackend<{ id: number; total: number }>("attendance/incidents", { method: "DELETE", query: { id } });

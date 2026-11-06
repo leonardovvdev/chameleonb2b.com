@@ -17,7 +17,7 @@ const consultarClave = () =>
 /** Crea la clave si no existe o la reemplaza si ya existe. */
 const guardarClave = (password: string, confirmPassword: string) =>
   supabase.functions.invoke<{ created: boolean }>(RUTA_CLAVE, {
-    method: "POST",
+    method: "PUT", // el backend registra "PUT /auth/password" (con POST daba 404)
     body: { password, confirmPassword },
   });
 
